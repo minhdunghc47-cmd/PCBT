@@ -31,6 +31,9 @@
         .inline-edit:focus { background: #ffffff; border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); }
         select.inline-edit { appearance: none; cursor: pointer; }
 
+        /* Style Subtasks */
+        .task-checkbox:checked + div { text-decoration: line-through; color: #9ca3af; }
+
         /* Chatbot UI */
         #chatbot-widget { position: fixed; bottom: 80px; right: 20px; z-index: 45; display: flex; flex-direction: column; align-items: flex-end; }
         #chat-window { width: 350px; height: 500px; max-height: calc(100vh - 160px); max-width: calc(100vw - 40px); background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); display: none; flex-direction: column; overflow: hidden; border: 1px solid #e5e7eb; margin-bottom: 15px; }
@@ -50,24 +53,18 @@
         .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
         .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
         @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-        .chat-msg strong { font-weight: bold; color: #111827; }
-        .chat-msg ul { list-style-type: disc; padding-left: 20px; margin-top: 4px; margin-bottom: 4px; }
-        .chat-msg p { margin-bottom: 4px; }
-        .msg-user strong { color: white; }
-
-        /* Checkbox Custom */
-        .task-checkbox:checked + div { text-decoration: line-through; color: #9ca3af; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden text-gray-800 text-sm md:text-base">
 
+    <!-- HIỆU ỨNG THÔNG BÁO VÀ LOADING TỔNG -->
     <div id="toast">Thành công!</div>
     <div id="loading">
         <i class="fa-solid fa-circle-notch fa-spin text-4xl text-red-600 mb-3"></i>
         <p class="text-gray-700 font-medium text-sm md:text-base mt-2">Đang kết nối hệ thống Cloud...</p>
     </div>
 
-    <!-- Sidebar (Desktop) -->
+    <!-- SIDEBAR MÁY TÍNH -->
     <aside class="w-64 bg-white shadow-lg flex flex-col justify-between hidden md:flex z-10">
         <div>
             <div class="h-16 flex items-center justify-center border-b border-gray-200 bg-red-700 text-white">
@@ -108,13 +105,14 @@
         </div>
     </aside>
 
-    <!-- Main Content -->
+    <!-- MÀN HÌNH HIỂN THỊ CHÍNH -->
     <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
         <header class="md:hidden h-14 bg-red-700 text-white flex items-center px-4 justify-between z-20">
             <div class="flex items-center"><i class="fa-solid fa-fire-extinguisher mr-2 text-lg"></i><span class="font-bold text-base">PCCC BÌNH TUYỀN</span></div>
             <button id="mobileMenuBtn" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars text-xl"></i></button>
         </header>
         
+        <!-- SIDEBAR ĐIỆN THOẠI -->
         <div id="mobile-sidebar" class="hidden md:hidden fixed inset-0 z-40 flex">
             <div class="fixed inset-0 bg-gray-600 bg-opacity-75" onclick="toggleMobileMenu()"></div>
             <div class="relative flex-1 flex flex-col max-w-[75%] w-full bg-white">
@@ -131,9 +129,10 @@
             </div>
         </div>
 
+        <!-- KHU VỰC NỘI DUNG TABS -->
         <div class="flex-1 overflow-y-auto p-3 md:p-6 lg:p-8 relative z-0">
             
-            <!-- DASHBOARD TAB -->
+            <!-- TỔNG QUAN (DASHBOARD) -->
             <div id="content-dashboard" class="tab-content active max-w-7xl mx-auto">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl md:text-2xl font-bold text-gray-800">Bảng Điều Khiển</h2>
@@ -185,9 +184,32 @@
                         <div class="divide-y divide-gray-200 flex-1 overflow-y-auto max-h-60" id="dash-tasks-list"></div>
                     </div>
                 </div>
+
+                <!-- BẢNG ĐÁNH GIÁ NĂNG LỰC KPI (TÍNH NĂNG MỚI) -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+                    <div class="px-5 py-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                        <h3 class="text-sm md:text-base font-bold text-gray-700"><i class="fa-solid fa-ranking-star text-blue-500 mr-2"></i> Đánh giá năng lực & Hiệu suất nhân sự (KPI)</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-white">
+                                <tr>
+                                    <th class="px-5 py-3 text-left font-bold text-gray-600">Thành viên</th>
+                                    <th class="px-5 py-3 text-center font-bold text-gray-600">Tổng giao</th>
+                                    <th class="px-5 py-3 text-center font-bold text-emerald-600">Hoàn thành</th>
+                                    <th class="px-5 py-3 text-center font-bold text-red-600">Quá hạn</th>
+                                    <th class="px-5 py-3 text-right font-bold text-blue-600">Tỷ lệ (KPI)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 bg-white" id="dash-performance-list">
+                                <!-- Render dữ liệu KPI bằng JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
-            <!-- FACILITIES TAB -->
+            <!-- TAB CƠ SỞ -->
             <div id="content-facilities" class="tab-content max-w-full mx-auto">
                 <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-4 gap-3">
                     <h2 class="text-xl md:text-2xl font-bold text-gray-800">Danh Sách Cơ Sở</h2>
@@ -268,7 +290,7 @@
                 </div>
             </div>
 
-            <!-- TASKS TAB -->
+            <!-- TAB GIAO VIỆC -->
             <div id="content-tasks" class="tab-content max-w-5xl mx-auto">
                 <div class="flex justify-between items-center mb-4 md:mb-6">
                     <h2 class="text-xl md:text-2xl font-bold text-gray-800">Phân Công Nhiệm Vụ</h2>
@@ -279,7 +301,7 @@
                 </div>
             </div>
 
-            <!-- FINANCE TAB -->
+            <!-- TAB SỔ QUỸ -->
             <div id="content-finance" class="tab-content max-w-5xl mx-auto">
                 <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">Sổ Quỹ Tổ Bình Tuyền</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -301,7 +323,7 @@
                 </div>
             </div>
 
-            <!-- PROJECTS TAB -->
+            <!-- TAB DỰ ÁN THI CÔNG -->
             <div id="content-projects" class="tab-content max-w-7xl mx-auto">
                 <div class="flex justify-between items-center mb-4 md:mb-6">
                     <h2 class="text-xl md:text-2xl font-bold text-gray-800">Quản Lý Dự Án Thi Công</h2>
@@ -342,7 +364,9 @@
         </div>
     </div>
 
-    <!-- MODAL: CƠ SỞ -->
+    <!-- TẤT CẢ CÁC CỬA SỔ MODAL (POPUP) -->
+    
+    <!-- Modal Cơ sở -->
     <div class="modal-overlay" id="modal-facility" onclick="closeModal(event, 'modal-facility')">
         <div class="modal-content max-w-3xl" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
@@ -411,12 +435,12 @@
                     <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Ghi chú</label>
                     <textarea id="f-notes" rows="2" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-red-500 text-sm md:text-base"></textarea>
                 </div>
-                <button type="submit" class="w-full bg-red-700 text-white font-bold py-2.5 rounded text-base hover:bg-red-800 transition shadow-sm">LƯU CƠ SỞ</button>
+                <button type="submit" id="btn-submit-fac" class="w-full bg-red-700 text-white font-bold py-2.5 rounded text-base hover:bg-red-800 transition shadow-sm">LƯU CƠ SỞ</button>
             </form>
         </div>
     </div>
 
-    <!-- MODAL: LỊCH SỬ -->
+    <!-- Modal Lịch sử cập nhật -->
     <div class="modal-overlay" id="modal-history" onclick="closeModal(event, 'modal-history')">
         <div class="modal-content max-w-xl" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
@@ -427,7 +451,7 @@
         </div>
     </div>
 
-    <!-- MODAL: DỰ ÁN -->
+    <!-- Modal Dự án thi công -->
     <div class="modal-overlay" id="modal-project" onclick="closeModal(event, 'modal-project')">
         <div class="modal-content max-w-2xl" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
@@ -472,20 +496,20 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Tiến độ (%)</label>
-                        <input type="number" id="p-progress" min="0" max="100" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 text-sm md:text-base font-bold">
+                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Tiến độ (Nhập tay %)</label>
+                        <input type="number" id="p-progress" min="0" max="100" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 text-sm md:text-base font-bold" placeholder="Tự tính nếu có checklist">
                     </div>
                     <div>
                         <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Dự kiến xong</label>
                         <input type="date" id="p-deadline" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 text-sm md:text-base">
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded text-base hover:bg-indigo-700 transition shadow-sm">LƯU DỰ ÁN</button>
+                <button type="submit" id="btn-submit-proj" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded text-base hover:bg-indigo-700 transition shadow-sm">LƯU DỰ ÁN</button>
             </form>
         </div>
     </div>
 
-    <!-- MODAL: LỢI NHUẬN -->
+    <!-- Modal Lợi nhuận -->
     <div class="modal-overlay" id="modal-profit" onclick="closeModal(event, 'modal-profit')">
         <div class="modal-content max-w-md" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
@@ -522,7 +546,7 @@
         </div>
     </div>
 
-    <!-- MODAL: NHIỆM VỤ VÀ QUỸ -->
+    <!-- Modal Giao Việc -->
     <div class="modal-overlay" id="modal-task" onclick="closeModal(event, 'modal-task')">
         <div class="modal-content max-w-md" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
@@ -532,12 +556,12 @@
             <form id="form-task" onsubmit="submitTask(event)">
                 <input type="hidden" id="t-id">
                 <div class="mb-4">
-                    <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Nội dung công việc (*)</label>
+                    <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Nội dung công việc lớn (*)</label>
                     <textarea id="t-title" required class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm md:text-base" rows="3"></textarea>
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-5">
                     <div>
-                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Người nhận</label>
+                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Người nhận chính</label>
                         <select id="t-assignee" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm md:text-base">
                             <option value="Đ/c Dũng">Đ/c Dũng</option>
                             <option value="Đ/c Thiêm">Đ/c Thiêm</option>
@@ -555,6 +579,7 @@
         </div>
     </div>
 
+    <!-- Modal Thu Chi Quỹ -->
     <div class="modal-overlay" id="modal-fund" onclick="closeModal(event, 'modal-fund')">
         <div class="modal-content max-w-md" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
@@ -574,7 +599,7 @@
                 </div>
                 <div class="mb-4">
                     <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Số tiền (VNĐ) (*)</label>
-                    <input type="number" id="f-amount" required class="w-full p-3 border border-gray-300 rounded font-bold text-lg md:text-xl text-blue-600 focus:ring-1 focus:ring-blue-500" placeholder="Ví dụ: 1000000">
+                    <input type="number" id="f-amount" required class="w-full p-3 border border-gray-300 rounded font-bold text-lg md:text-xl text-blue-600 focus:ring-1 focus:ring-blue-500" placeholder="1000000">
                 </div>
                 <div class="mb-5">
                     <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Nội dung giải trình</label>
@@ -585,7 +610,7 @@
         </div>
     </div>
 
-    <!-- Firebase SDK Setup & Logic -->
+    <!-- Firebase SDK MỘT LẦN DUY NHẤT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -644,8 +669,8 @@
         window.myChart = new Chart(ctx, { type: 'doughnut', data: { labels: ['Đang tải...'], datasets: [{ data: [1], backgroundColor: ['#9ca3af'], borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 12 } } } } } });
     </script>
 
+    <!-- TOÀN BỘ LOGIC CỦA ỨNG DỤNG -->
     <script>
-        // DI SẢN MÃ ĐÃ ĐƯỢC CHẮT LỌC VÀ LÀM SẠCH 100%
         const ZALO_PHONES = { "Đ/c Dũng": "0335016599", "Đ/c Thiêm": "0987654321", "Đ/c Trung": "0912345678", "Đ/c Hải": "0900000000" };
         const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwaGcRumou-b52QBS4doenpWrwuTso0Hb3-cT87X6RSnLZqcSHn2fGQFxhnEWvHAeFU/exec"; 
 
@@ -704,6 +729,7 @@
             document.getElementById('dash-total-tasks').innerText = window.allTasks.filter(t => !t.isCompleted).length;
             document.getElementById('dash-projects').innerText = window.allProjects.filter(p => p.status === 'Thi công').length;
             
+            // Render Tasks Cần xử lý
             const dashTasksEl = document.getElementById('dash-tasks-list');
             const recentTasks = window.allTasks.filter(t => !t.isCompleted).sort((a,b) => new Date(a.deadline) - new Date(b.deadline)).slice(0, 5);
             if(recentTasks.length === 0) dashTasksEl.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm font-bold mt-4">Không có nhiệm vụ tồn đọng.</div>';
@@ -714,6 +740,35 @@
                 }).join('');
             }
 
+            // ĐÁNH GIÁ NĂNG LỰC KPI (TÍNH NĂNG MỚI)
+            const members = ['Đ/c Dũng', 'Đ/c Thiêm', 'Đ/c Trung', 'Đ/c Hải'];
+            const perfList = document.getElementById('dash-performance-list');
+            if (perfList) {
+                perfList.innerHTML = members.map(m => {
+                    const memberTasks = window.allTasks.filter(t => t.assignee === m);
+                    const total = memberTasks.length;
+                    const completed = memberTasks.filter(t => t.isCompleted).length;
+                    const overdue = memberTasks.filter(t => !t.isCompleted && t.deadline && new Date(t.deadline + 'T23:59:59') < new Date()).length;
+                    const kpi = total === 0 ? 0 : Math.round((completed / total) * 100);
+                    
+                    return `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-5 py-3 font-bold text-gray-800">${m}</td>
+                            <td class="px-5 py-3 text-center font-medium">${total}</td>
+                            <td class="px-5 py-3 text-center font-bold text-emerald-600">${completed}</td>
+                            <td class="px-5 py-3 text-center font-bold ${overdue > 0 ? 'text-red-600' : 'text-gray-400'}">${overdue}</td>
+                            <td class="px-5 py-3 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <span class="font-bold ${kpi >= 80 ? 'text-green-600' : kpi >= 50 ? 'text-yellow-600' : 'text-red-600'}">${kpi}%</span>
+                                    <div class="w-16 bg-gray-200 rounded-full h-1.5 hidden md:block"><div class="h-1.5 rounded-full ${kpi >= 80 ? 'bg-green-500' : kpi >= 50 ? 'bg-yellow-500' : 'bg-red-500'}" style="width: ${kpi}%"></div></div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // Update Chart Cơ sở
             if(window.myChart) {
                 const typeCounts = {};
                 window.allFacilities.forEach(f => {
@@ -732,200 +787,29 @@
             if(datalistEl) datalistEl.innerHTML = dataListHtml;
         }
 
-        /* --- LOGIC CƠ SỞ --- */
-        window.openFacilityModal = function(id = null) {
-            const form = document.getElementById('form-facility'); form.reset();
-            document.querySelectorAll('.f-insp-cb').forEach(cb => cb.checked = false);
-            if(id) {
-                document.getElementById('modal-fac-title').innerText = "Cập Nhật Chi Tiết"; document.getElementById('btn-submit-fac').innerText = "CẬP NHẬT THÔNG TIN";
-                const f = window.allFacilities.find(x => x.id === id);
-                if(f) {
-                    document.getElementById('f-id').value = f.id; document.getElementById('f-name').value = f.name || ''; 
-                    document.getElementById('f-fac-type').value = f.facilityType || ''; document.getElementById('f-record-num').value = f.recordNum || '';
-                    document.getElementById('f-plan-num').value = f.planNum || ''; document.getElementById('f-open-date').value = f.openDate || ''; 
-                    document.getElementById('f-village').value = f.village || ''; document.getElementById('f-manager').value = f.manager || 'Chưa phân công'; 
-                    document.getElementById('f-pc08-builder').value = f.pc08Builder || ''; document.getElementById('f-pc08-date').value = f.pc08Date || ''; 
-                    document.getElementById('f-trained-2026').value = f.trained2026 || ''; document.getElementById('f-inspected-2026').value = f.inspected2026 || ''; 
-                    document.getElementById('f-constructor').value = f.constructor || ''; document.getElementById('f-notes').value = f.notes || '';
-                    
-                    if(f.inspector) {
-                        const parts = f.inspector.split(',').map(s => s.trim()); let otherArr = []; const cbs = Array.from(document.querySelectorAll('.f-insp-cb'));
-                        parts.forEach(p => { const cb = cbs.find(c => c.value === p); if(cb) cb.checked = true; else if(p) otherArr.push(p); });
-                        document.getElementById('f-inspector-other').value = otherArr.join(', ');
-                    }
-                }
-            } else { document.getElementById('modal-fac-title').innerText = "Hồ Sơ Cơ Sở Mới"; document.getElementById('btn-submit-fac').innerText = "LƯU CƠ SỞ"; document.getElementById('f-id').value = ""; }
-            openModal('modal-facility');
-        };
-
-        function getFacilityChanges(oldObj, newObj) {
-            const labels = { name: 'Tên', facilityType: 'Loại hình', recordNum: 'Số HS', planNum: 'Số PA', openDate: 'Ngày mở', village: 'Thôn', manager: 'CB Quản lý', pc08Builder: 'Lập PC08', pc08Date: 'Ký PC08', trained2026: 'Ngày HL', inspected2026: 'Ngày KT', inspector: 'Đoàn KT', constructor: 'Thi công', notes: 'Ghi chú' };
-            let changes = [];
-            for (let k in labels) { if ((oldObj[k]||'') !== (newObj[k]||'')) changes.push(`${labels[k]}: "${oldObj[k]||'(trống)'}" ➝ "${newObj[k]||'(trống)'}"`); }
-            return changes;
-        }
-
-        window.submitFacility = async function(e) {
-            e.preventDefault(); if(!window.currentUser) return;
-            const btn = document.getElementById('btn-submit-fac'); btn.innerText = "Đang lưu...";
-            let insps = Array.from(document.querySelectorAll('.f-insp-cb')).filter(cb => cb.checked).map(cb => cb.value);
-            const otherInsp = document.getElementById('f-inspector-other').value.trim(); if(otherInsp) insps.push(otherInsp);
-            const finalInspector = insps.join(', ');
-
-            const payload = {
-                name: document.getElementById('f-name').value, facilityType: document.getElementById('f-fac-type').value, 
-                recordNum: document.getElementById('f-record-num').value, planNum: document.getElementById('f-plan-num').value,
-                openDate: document.getElementById('f-open-date').value, village: document.getElementById('f-village').value,
-                manager: document.getElementById('f-manager').value, pc08Builder: document.getElementById('f-pc08-builder').value,
-                pc08Date: document.getElementById('f-pc08-date').value, trained2026: document.getElementById('f-trained-2026').value,
-                inspected2026: document.getElementById('f-inspected-2026').value, inspector: finalInspector,
-                constructor: document.getElementById('f-constructor').value, notes: document.getElementById('f-notes').value
-            };
-            const id = document.getElementById('f-id').value;
-            try {
-                if(id) {
-                    const oldData = window.allFacilities.find(x => x.id === id); const changes = getFacilityChanges(oldData, payload);
-                    if(changes.length > 0) {
-                        payload.history = [...(oldData.history || [])]; payload.history.unshift({ time: Date.now(), details: changes });
-                        await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'facilities', id), payload); 
-                        showToast("Đã cập nhật!"); syncToGoogleSheets('UPDATE', 'facilities', id, payload);
-                    } else showToast("Không có thay đổi nào");
-                } else {
-                    payload.createdAt = Date.now(); 
-                    const docRef = await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'facilities'), payload); 
-                    showToast("Đã thêm mới!"); syncToGoogleSheets('ADD', 'facilities', docRef.id, payload);
-                }
-                hideModal('modal-facility');
-            } catch(e) { alert(e); } finally { btn.innerText = "LƯU"; }
-        };
-
-        window.updateFacilityInline = async function(id, field, value) {
-            if(!window.currentUser) return;
-            const fac = window.allFacilities.find(f => f.id === id);
-            if(!fac || (fac[field] || '') == value) return;
-            const payload = {}; payload[field] = value;
-            const labels = { name: 'Tên', facilityType: 'Loại hình', recordNum: 'Số HS', planNum: 'Số PA', openDate: 'Ngày mở', village: 'Thôn', manager: 'CB Quản lý', pc08Builder: 'Lập PC08', pc08Date: 'Ký PC08', trained2026: 'Ngày HL', inspected2026: 'Ngày KT' };
-            const changes = [`${labels[field] || field}: "${fac[field]||'(trống)'}" ➝ "${value||'(trống)'}"`];
-            payload.history = [...(fac.history || [])]; payload.history.unshift({ time: Date.now(), details: ["(Sửa nhanh) " + changes[0]] });
-            try {
-                await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'facilities', id), payload);
-                showToast("Đã lưu: " + (labels[field] || field));
-                const fullUpdatedObj = { ...fac, [field]: value };
-                syncToGoogleSheets('UPDATE', 'facilities', id, fullUpdatedObj);
-            } catch(e) { alert(e); }
-        };
-
-        window.showHistory = function(id) {
-            const f = window.allFacilities.find(x => x.id === id); const list = document.getElementById('history-list');
-            if(!f || !f.history || f.history.length === 0) list.innerHTML = `<p class="text-gray-500 text-center py-6 text-sm md:text-base font-bold">Chưa có lịch sử cập nhật nào.</p>`;
-            else {
-                list.innerHTML = f.history.map(h => `
-                    <div class="border-l-4 border-blue-500 pl-4 py-2 relative bg-gray-50 rounded-r-lg mb-3 shadow-sm">
-                        <div class="absolute w-3 h-3 bg-blue-600 rounded-full -left-[8px] top-3 border-2 border-white"></div>
-                        <p class="text-sm md:text-base text-gray-800 font-bold mb-1">${new Date(h.time).toLocaleString('vi-VN')}</p>
-                        <ul class="list-disc pl-5 text-xs md:text-sm text-gray-700 font-medium space-y-1">${h.details.map(d => `<li>${d}</li>`).join('')}</ul>
-                    </div>`).join('');
-            }
-            openModal('modal-history');
-        };
-
-        window.renderFacilities = function() {
-            const term = document.getElementById('search-facility').value.toLowerCase();
-            const sortMode = document.getElementById('sort-facility').value;
-            const filterStatus = document.getElementById('filter-status-facility').value;
-            const tbody = document.getElementById('facilities-table-body');
-            let data = [...window.allFacilities];
-            if (filterStatus !== 'all') {
-                data = data.filter(f => {
-                    if (filterStatus === 'thieu-hs') return !f.recordNum || f.recordNum.trim() === '';
-                    if (filterStatus === 'co-hs') return f.recordNum && f.recordNum.trim() !== '';
-                    if (filterStatus === 'thieu-pa') return !f.planNum || f.planNum.trim() === '';
-                    if (filterStatus === 'co-pa') return f.planNum && f.planNum.trim() !== '';
-                    if (filterStatus === 'thieu-cbql') return !f.manager || f.manager === 'Chưa phân công';
-                    if (filterStatus === 'co-cbql') return f.manager && f.manager !== 'Chưa phân công';
-                    if (filterStatus === 'thieu-nguoi-lap') return !f.pc08Builder || f.pc08Builder.trim() === '';
-                    if (filterStatus === 'co-nguoi-lap') return f.pc08Builder && f.pc08Builder.trim() !== '';
-                    if (filterStatus === 'thieu-ngay-ky') return !f.pc08Date || f.pc08Date.trim() === '';
-                    if (filterStatus === 'co-ngay-ky') return f.pc08Date && f.pc08Date.trim() !== '';
-                    if (filterStatus === 'thieu-hl') return !f.trained2026 || f.trained2026.trim() === '';
-                    if (filterStatus === 'co-hl') return f.trained2026 && f.trained2026.trim() !== '';
-                    if (filterStatus === 'thieu-kt') return !f.inspected2026 || f.inspected2026.trim() === '';
-                    if (filterStatus === 'co-kt') return f.inspected2026 && f.inspected2026.trim() !== '';
-                    return true;
-                });
-            }
-            data.sort((a, b) => {
-                if(sortMode === 'date-desc') return (b.openDate ? new Date(b.openDate).getTime() : 0) - (a.openDate ? new Date(a.openDate).getTime() : 0);
-                if(sortMode === 'date-asc') return (a.openDate ? new Date(a.openDate).getTime() : Infinity) - (b.openDate ? new Date(b.openDate).getTime() : Infinity);
-                if(sortMode === 'name-asc') return (a.name||'').localeCompare(b.name||'');
-                if(sortMode === 'name-desc') return (b.name||'').localeCompare(a.name||'');
-                if(sortMode === 'type-asc') return (a.facilityType||'').localeCompare(b.facilityType||'');
-                return 0;
-            });
-
-            if(term) data = data.filter(f => (f.name||'').toLowerCase().includes(term) || (f.recordNum||'').toLowerCase().includes(term) || (f.planNum||'').toLowerCase().includes(term) || (f.facilityType||'').toLowerCase().includes(term));
-            if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 text-sm md:text-base font-bold">Không tìm thấy cơ sở nào khớp với bộ lọc.</td></tr>`; return; }
-
-            const managerOptions = ['Chưa phân công', 'Đ/c Dũng', 'Đ/c Thiêm', 'Đ/c Trung', 'Đ/c Hải', 'Tổ trưởng'];
-            const makeInput = (val, field, id, cls, placeholder="") => `<input type="text" value="${val||''}" onchange="updateFacilityInline('${id}', '${field}', this.value)" class="inline-edit ${cls}" placeholder="${placeholder}">`;
-            const makeDate = (val, field, id, cls) => `<input type="date" value="${val||''}" onchange="updateFacilityInline('${id}', '${field}', this.value)" class="inline-edit ${cls}">`;
-            const makeSelect = (val, field, id, options, cls) => {
-                const opts = options.map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('');
-                return `<select onchange="updateFacilityInline('${id}', '${field}', this.value)" class="inline-edit ${cls}">${opts}</select>`;
-            };
-
-            tbody.innerHTML = data.map((f, index) => {
-                const isHL = !!f.trained2026; const isKT = !!f.inspected2026;
-                const statusHtml = `<div class="text-xs md:text-sm space-y-1 md:space-y-2">
-                    <div class="flex items-center gap-1 font-bold ${isHL ? 'text-green-600' : 'text-red-500'}">HL: ${makeDate(f.trained2026, 'trained2026', f.id, isHL?'text-green-600':'text-red-500')}</div>
-                    <div class="flex items-center gap-1 font-bold ${isKT ? 'text-green-600' : 'text-red-500'}">KT: ${makeDate(f.inspected2026, 'inspected2026', f.id, isKT?'text-green-600':'text-red-500')}</div>
-                    <div class="text-gray-600 truncate w-32 md:w-48 font-medium" title="${f.inspector||''}">Đoàn: ${f.inspector||'---'}</div>
-                </div>`;
-                return `
-                <tr class="hover:bg-red-50 transition border-b border-gray-100 group">
-                    <td class="px-2 py-3 md:px-4 md:py-4 align-top text-center font-bold text-gray-500 text-sm md:text-base">${index + 1}</td>
-                    <td class="px-3 py-3 md:px-4 md:py-4 align-top">
-                        ${makeInput(f.name, 'name', f.id, 'text-sm md:text-base font-bold text-gray-900 mb-1', 'Tên cơ sở...')}
-                        <div class="flex items-center text-xs md:text-sm text-gray-600 font-bold mb-0.5 md:mb-1"><i class="fa-solid fa-tag text-blue-500 w-4 md:w-5"></i> ${makeInput(f.facilityType, 'facilityType', f.id, 'font-bold text-gray-600', 'Loại hình...')}</div>
-                        <div class="flex items-center text-xs md:text-sm text-gray-500 font-medium"><i class="fa-solid fa-location-dot text-red-500 w-4 md:w-5"></i> ${makeInput(f.village, 'village', f.id, 'font-medium', 'Thôn/Xóm...')}</div>
-                        ${f.notes ? `<div class="text-xs text-yellow-700 mt-2 bg-yellow-50 p-1.5 rounded border border-yellow-200 line-clamp-2 font-medium" title="${f.notes}">${f.notes}</div>` : ''}
-                    </td>
-                    <td class="px-3 py-3 md:px-4 md:py-4 align-top whitespace-nowrap">
-                        <div class="flex items-center text-sm md:text-base text-gray-900 font-bold mb-1 md:mb-2"><i class="fa-solid fa-user-tie text-blue-500 w-4 md:w-5"></i> ${makeSelect(f.manager, 'manager', f.id, managerOptions, 'font-bold text-gray-900')}</div>
-                        <div class="flex items-center text-sm md:text-base text-blue-700 font-bold mb-0.5 md:mb-1">HS: ${makeInput(f.recordNum, 'recordNum', f.id, 'font-bold text-blue-700', 'Số HS...')}</div>
-                        <div class="flex items-center text-xs md:text-sm text-gray-600 font-medium">Mở: ${makeDate(f.openDate, 'openDate', f.id, 'text-gray-600')}</div>
-                    </td>
-                    <td class="px-3 py-3 md:px-4 md:py-4 align-top whitespace-nowrap">
-                        <div class="flex items-center text-sm md:text-base text-green-700 font-bold mb-1 md:mb-2">PA: ${makeInput(f.planNum, 'planNum', f.id, 'font-bold text-green-700', 'Số PA...')}</div>
-                        <div class="flex items-center text-xs md:text-sm text-gray-600 font-medium mb-0.5 md:mb-1">Lập: ${makeInput(f.pc08Builder, 'pc08Builder', f.id, 'font-medium', 'Người lập...')}</div>
-                        <div class="flex items-center text-xs md:text-sm text-gray-600 font-medium">Ký: ${makeDate(f.pc08Date, 'pc08Date', f.id, 'text-gray-600')}</div>
-                    </td>
-                    <td class="px-3 py-3 md:px-4 md:py-4 align-top whitespace-nowrap">${statusHtml}</td>
-                    <td class="px-3 py-3 md:px-4 md:py-4 align-top whitespace-nowrap text-right">
-                        <div class="flex flex-col gap-2 items-end">
-                            <button type="button" onclick="openFacilityModal('${f.id}')" class="text-blue-700 hover:text-white bg-blue-50 hover:bg-blue-600 px-2 py-1 md:px-3 md:py-1.5 rounded text-xs md:text-sm font-bold w-20 md:w-24 text-center border border-blue-100 transition"><i class="fa-solid fa-bars-staggered"></i> Chi tiết</button>
-                            <button type="button" onclick="showHistory('${f.id}')" class="text-gray-700 hover:text-white bg-gray-100 hover:bg-gray-600 px-2 py-1 md:px-3 md:py-1.5 rounded text-xs md:text-sm font-bold w-20 md:w-24 text-center border border-gray-200 transition"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử</button>
-                            <button type="button" onclick="deleteDocItem('facilities', '${f.id}')" class="text-red-600 hover:text-white bg-red-50 hover:bg-red-600 px-2 py-1 md:px-3 md:py-1.5 rounded text-xs md:text-sm font-bold w-20 md:w-24 text-center border border-red-100 transition opacity-100 md:opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash"></i> Xóa</button>
-                        </div>
-                    </td>
-                </tr>`;
-            }).join('');
-        };
-
         /* --- XỬ LÝ SUBTASKS (CÁC BƯỚC THỰC HIỆN CHI TIẾT) --- */
         window.addSubtask = async function(col, id) {
             if(!window.currentUser) return;
             const input = document.getElementById(`new-subtask-${col}-${id}`);
             const text = input.value.trim();
             if(!text) return;
+            
             const dataArr = col === 'tasks' ? window.allTasks : window.allProjects;
             const item = dataArr.find(x => x.id === id);
             if(!item) return;
+
             const newSubtasks = [...(item.subtasks || [])];
             newSubtasks.push({ id: Date.now(), text: text, isCompleted: false, assignee: item.assignee || 'Đ/c Dũng' });
-            await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', col, id), { subtasks: newSubtasks });
-            syncToGoogleSheets('UPDATE', col, id, { ...item, subtasks: newSubtasks });
-            input.value = ''; 
+
+            const updates = { subtasks: newSubtasks };
+            // Tự động tính tiến độ Dự án
+            if (col === 'projects') {
+                updates.progress = newSubtasks.length > 0 ? Math.round((newSubtasks.filter(st => st.isCompleted).length / newSubtasks.length) * 100) : (item.progress || 0);
+            }
+
+            await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', col, id), updates);
+            syncToGoogleSheets('UPDATE', col, id, { ...item, ...updates });
+            input.value = ''; // Xóa ô nhập
         };
 
         window.toggleSubtask = async function(col, id, idx) {
@@ -933,10 +817,18 @@
             const dataArr = col === 'tasks' ? window.allTasks : window.allProjects;
             const item = dataArr.find(x => x.id === id);
             if(!item || !item.subtasks) return;
+
             const newSubtasks = [...item.subtasks];
             newSubtasks[idx].isCompleted = !newSubtasks[idx].isCompleted;
-            await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', col, id), { subtasks: newSubtasks });
-            syncToGoogleSheets('UPDATE', col, id, { ...item, subtasks: newSubtasks });
+
+            const updates = { subtasks: newSubtasks };
+            // Tự động tính tiến độ Dự án
+            if (col === 'projects') {
+                updates.progress = newSubtasks.length > 0 ? Math.round((newSubtasks.filter(st => st.isCompleted).length / newSubtasks.length) * 100) : (item.progress || 0);
+            }
+
+            await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', col, id), updates);
+            syncToGoogleSheets('UPDATE', col, id, { ...item, ...updates });
         };
 
         window.deleteSubtask = async function(col, id, idx) {
@@ -945,13 +837,21 @@
             const dataArr = col === 'tasks' ? window.allTasks : window.allProjects;
             const item = dataArr.find(x => x.id === id);
             if(!item || !item.subtasks) return;
+
             const newSubtasks = [...item.subtasks];
             newSubtasks.splice(idx, 1);
-            await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', col, id), { subtasks: newSubtasks });
-            syncToGoogleSheets('UPDATE', col, id, { ...item, subtasks: newSubtasks });
+
+            const updates = { subtasks: newSubtasks };
+            // Tự động tính tiến độ Dự án
+            if (col === 'projects') {
+                updates.progress = newSubtasks.length > 0 ? Math.round((newSubtasks.filter(st => st.isCompleted).length / newSubtasks.length) * 100) : (item.progress || 0);
+            }
+
+            await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', col, id), updates);
+            syncToGoogleSheets('UPDATE', col, id, { ...item, ...updates });
         };
 
-        /* --- QUẢN LÝ NHIỆM VỤ --- */
+        /* --- QUẢN LÝ NHIỆM VỤ (DẠNG DANH SÁCH + TIẾN ĐỘ) --- */
         window.openTaskModal = function(id = null) {
             const form = document.getElementById('form-task'); form.reset();
             if(id) {
@@ -974,28 +874,35 @@
 
         window.submitTask = async function(e) {
             e.preventDefault(); if(!window.currentUser) return;
-            const btn = document.getElementById('btn-submit-task'); btn.innerText = "Đang lưu...";
+            const btn = document.getElementById('btn-submit-task') || e.target.querySelector('button'); btn.innerText = "Đang lưu...";
+            
             const payload = {
                 title: document.getElementById('t-title').value,
                 assignee: document.getElementById('t-assignee').value,
                 deadline: document.getElementById('t-deadline').value
             };
-            const id = document.getElementById('t-id').value;
+            const id = document.getElementById('t-id') ? document.getElementById('t-id').value : null;
+            
             try {
                 if (id) {
                     const oldData = window.allTasks.find(x => x.id === id);
                     payload.isCompleted = oldData ? oldData.isCompleted : false;
-                    payload.subtasks = oldData && oldData.subtasks ? oldData.subtasks : [];
-                    payload.createdAt = oldData && oldData.createdAt ? oldData.createdAt : Date.now();
+                    payload.subtasks = oldData ? oldData.subtasks : [];
+                    payload.createdAt = oldData ? oldData.createdAt : Date.now();
                     await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'tasks', id), payload);
-                    showToast("Đã cập nhật công việc!"); syncToGoogleSheets('UPDATE', 'tasks', id, payload);
+                    showToast("Đã cập nhật công việc!");
+                    syncToGoogleSheets('UPDATE', 'tasks', id, payload);
                 } else {
-                    payload.isCompleted = false; payload.subtasks = []; payload.createdAt = Date.now();
+                    payload.isCompleted = false;
+                    payload.subtasks = [];
+                    payload.createdAt = Date.now();
                     const docRef = await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'tasks'), payload);
-                    showToast("Đã giao việc!"); syncToGoogleSheets('ADD', 'tasks', docRef.id, payload);
+                    showToast("Đã giao việc!");
+                    syncToGoogleSheets('ADD', 'tasks', docRef.id, payload);
                 }
                 e.target.reset(); hideModal('modal-task');
-            } catch (err) { alert("Lỗi: " + err.message); } finally { btn.innerText = id ? "CẬP NHẬT" : "GIAO VIỆC"; }
+            } catch (err) { alert("Lỗi: " + err.message); }
+            finally { btn.innerText = id ? "CẬP NHẬT" : "GIAO VIỆC"; }
         }
 
         window.toggleTask = async function(id, currentStatus) {
@@ -1005,26 +912,16 @@
             syncToGoogleSheets('UPDATE', 'tasks', id, { ...item, isCompleted: !currentStatus });
         }
 
-        window.copyAndOpenZalo = function(taskId) {
-            const t = window.allTasks.find(x => x.id === taskId);
-            if (!t) return;
-            const phone = ZALO_PHONES[t.assignee] || "";
-            const dateStr = t.deadline ? new Date(t.deadline).toLocaleDateString('vi-VN') : 'Không có';
-            const msg = `🚨 *NHIỆM VỤ PCCC BÌNH TUYỀN*\n\n📌 Công việc: ${t.title}\n👤 Giao cho: ${t.assignee}\n⏰ Hạn chót: ${dateStr}\n\n👉 Đồng chí vui lòng phản hồi và báo cáo tiến độ nhé!`;
-            
-            navigator.clipboard.writeText(msg).then(() => {
-                showToast('Đã chép nội dung! Đang kết nối Zalo...');
-                window.open('zalo://share?text=' + encodeURIComponent(msg), '_self');
-                if (phone) setTimeout(() => window.open(`https://zalo.me/${phone}`, '_blank'), 500);
-            }).catch(err => alert("Trình duyệt chặn copy. Bạn hãy cấp quyền nhé!"));
-        };
-
         window.renderTasks = function() {
             const list = document.getElementById('tasks-list'); const data = window.allTasks.sort((a,b) => a.isCompleted - b.isCompleted || b.createdAt - a.createdAt);
             if(data.length === 0) { list.innerHTML = `<div class="text-center text-gray-500 py-8 text-sm md:text-base font-bold">Không có việc tồn đọng!</div>`; return; }
             list.innerHTML = data.map(t => {
-                const isOverdue = !t.isCompleted && t.deadline && new Date(t.deadline + 'T23:59:59') < new Date();
+                const isOverdue = !t.isCompleted && new Date(t.deadline + 'T23:59:59') < new Date();
+                const phone = ZALO_PHONES[t.assignee] || "";
+                const msg = `🚨 *NHIỆM VỤ PCCC BÌNH TUYỀN*\n\n📌 Công việc: ${t.title}\n👤 Giao cho: ${t.assignee}\n⏰ Hạn chót: ${new Date(t.deadline).toLocaleDateString('vi-VN')}\n\n👉 Đồng chí vui lòng phản hồi và báo cáo tiến độ nhé!`;
+                
                 const deadlineHtml = t.deadline ? `<div class="text-[11px] md:text-xs ${isOverdue ? 'text-red-600 font-bold' : 'text-gray-600 font-medium'} mt-1.5"><i class="fa-regular fa-clock"></i> KPI Hạn: ${new Date(t.deadline).toLocaleDateString('vi-VN')}</div>` : '';
+                
                 const subtasksArr = t.subtasks || [];
                 const subtasksHtml = subtasksArr.length > 0 ? `
                     <div class="mt-3 pt-3 border-t border-gray-100">
@@ -1045,12 +942,12 @@
                     <div class="flex items-start gap-3">
                         <input type="checkbox" ${t.isCompleted ? 'checked' : ''} onchange="toggleTask('${t.id}', ${t.isCompleted})" class="w-5 h-5 md:w-6 md:h-6 mt-0.5 rounded text-blue-600 focus:ring-blue-500 cursor-pointer">
                         <div class="flex-1">
-                            <h3 class="text-base md:text-lg ${t.isCompleted ? 'line-through text-gray-500' : 'font-bold text-gray-900'} whitespace-pre-wrap">${t.title}</h3>
+                            <h3 class="text-base md:text-lg ${t.isCompleted ? 'line-through text-gray-500' : 'font-bold text-gray-900'}">${t.title}</h3>
                             ${deadlineHtml}
                             <div class="flex items-center justify-between mt-3">
                                 <span class="bg-gray-100 border border-gray-200 text-gray-800 text-xs md:text-sm font-bold px-2 py-1 md:px-3 md:py-1.5 rounded shadow-sm">Giao: <span class="text-blue-700">${t.assignee}</span></span>
                                 <div class="flex gap-1.5">
-                                    <button onclick="copyAndOpenZalo('${t.id}')" class="text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-2 py-1.5 rounded text-xs md:text-sm font-bold border border-blue-100 transition"><i class="fa-solid fa-comment-sms"></i> Zalo</button>
+                                    <button onclick="navigator.clipboard.writeText(\`${msg}\`).then(() => { showToast('Đã chép nội dung! Đang kết nối Zalo...'); window.open('zalo://share?text=${encodeURIComponent(msg)}', '_self'); setTimeout(() => window.open('https://zalo.me/${phone}', '_blank'), 500); })" class="text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-2 py-1.5 rounded text-xs md:text-sm font-bold border border-blue-100 transition"><i class="fa-solid fa-comment-sms"></i> Zalo</button>
                                     <button onclick="openTaskModal('${t.id}')" class="text-indigo-600 hover:text-white bg-indigo-50 hover:bg-indigo-600 px-2 py-1.5 rounded text-xs md:text-sm font-bold border border-indigo-100 transition"><i class="fa-solid fa-pen"></i> Sửa</button>
                                     <button onclick="deleteDocItem('tasks', '${t.id}')" class="text-red-500 hover:text-white bg-red-50 hover:bg-red-600 px-2 py-1.5 rounded text-xs md:text-sm font-bold border border-red-100 transition"><i class="fa-solid fa-trash"></i> Xóa</button>
                                 </div>
@@ -1066,19 +963,28 @@
             }).join('');
         };
 
-        /* --- QUẢN LÝ DỰ ÁN THI CÔNG --- */
+        /* --- QUẢN LÝ DỰ ÁN THI CÔNG (DẠNG DANH SÁCH + TIẾN ĐỘ) --- */
         window.openProjectModal = function(id = null) {
             const form = document.getElementById('form-project'); form.reset();
             if(id) {
                 document.getElementById('modal-proj-title').innerText = "Cập Nhật Dự Án"; document.getElementById('btn-submit-proj').innerText = "CẬP NHẬT THÔNG TIN";
                 const p = window.allProjects.find(x => x.id === id);
                 if(p) {
-                    document.getElementById('p-id').value = p.id; document.getElementById('p-name').value = p.name; document.getElementById('p-client').value = p.client || '';
-                    document.getElementById('p-assignee').value = p.assignee || 'Đ/c Dũng'; document.getElementById('p-value').value = p.value || ''; 
-                    document.getElementById('p-cost').value = p.cost || ''; document.getElementById('p-status').value = p.status || 'Khảo sát'; 
+                    document.getElementById('p-id').value = p.id; 
+                    document.getElementById('p-name').value = p.name || ''; 
+                    document.getElementById('p-client').value = p.client || '';
+                    document.getElementById('p-assignee').value = p.assignee || 'Đ/c Dũng'; 
+                    document.getElementById('p-value').value = p.value || ''; 
+                    document.getElementById('p-cost').value = p.cost || ''; 
+                    document.getElementById('p-progress').value = p.progress || 0;
+                    document.getElementById('p-status').value = p.status || 'Khảo sát'; 
                     document.getElementById('p-deadline').value = p.deadline || '';
                 }
-            } else { document.getElementById('modal-proj-title').innerText = "Dự Án Mới"; document.getElementById('btn-submit-proj').innerText = "LƯU DỰ ÁN"; document.getElementById('p-id').value = ""; }
+            } else { 
+                document.getElementById('modal-proj-title').innerText = "Dự Án Mới"; 
+                document.getElementById('btn-submit-proj').innerText = "LƯU DỰ ÁN"; 
+                document.getElementById('p-id').value = ""; 
+            }
             openModal('modal-project');
         };
 
@@ -1098,7 +1004,8 @@
                     await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'projects', id), payload); 
                     showToast("Đã cập nhật dự án!"); syncToGoogleSheets('UPDATE', 'projects', id, payload);
                 } else { 
-                    payload.subtasks = []; payload.profitTransferred = false; payload.createdAt = Date.now(); 
+                    payload.subtasks = [];
+                    payload.profitTransferred = false; payload.createdAt = Date.now(); 
                     const docRef = await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'projects'), payload); 
                     showToast("Đã thêm dự án!"); syncToGoogleSheets('ADD', 'projects', docRef.id, payload);
                 }
@@ -1111,11 +1018,13 @@
             const id = document.getElementById('pr-id').value; const amount = parseInt(document.getElementById('pr-amount').value);
             const name = document.getElementById('pr-name').value; const dest = document.querySelector('input[name="pr-dest"]:checked').value;
             const note = document.getElementById('pr-note').value;
+            
             try {
                 if(dest === 'quy_to') {
                     const fundPayload = { type: 'thu', amount: amount, desc: `Lợi nhuận thi công: ${name}`, createdAt: Date.now() };
                     const fundRef = await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'funds'), fundPayload);
                     syncToGoogleSheets('ADD', 'funds', fundRef.id, fundPayload);
+
                     await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'projects', id), { profitTransferred: true, profitDestination: 'Quỹ Tổ' });
                     syncToGoogleSheets('UPDATE', 'projects', id, { profitTransferred: true, profitDestination: 'Quỹ Tổ' });
                     showToast("Đã cộng tiền vào Quỹ Tổ!");
@@ -1131,7 +1040,10 @@
         window.renderProjects = function() {
             const list = document.getElementById('projects-list');
             if(window.allProjects.length === 0) { list.innerHTML = `<div class="col-span-full text-center text-gray-500 py-10 border-2 border-dashed border-gray-300 rounded-lg text-sm md:text-base font-bold">Chưa có dự án nào. Bấm Thêm Dự Án để bắt đầu.</div>`; return; }
+            
+            // Layout List cho Dự Án thay vì Card Grid
             list.className = "flex flex-col gap-4 md:gap-6";
+            
             list.innerHTML = window.allProjects.sort((a,b) => b.createdAt - a.createdAt).map(p => {
                 let badgeClass = "bg-gray-100 text-gray-700 border-gray-200";
                 if(p.status === 'Thi công') badgeClass = "bg-indigo-100 text-indigo-700 border-indigo-200";
@@ -1150,6 +1062,8 @@
                 const subtasksArr = p.subtasks || [];
                 const completedSubtasks = subtasksArr.filter(st => st.isCompleted).length;
                 const totalSubtasks = subtasksArr.length;
+                
+                // Tự động tính toán lại thanh tiến độ dựa trên check list
                 const actualProgress = totalSubtasks > 0 ? Math.round((completedSubtasks / totalSubtasks) * 100) : (p.progress || 0);
 
                 const subtasksHtml = subtasksArr.length > 0 ? `
@@ -1198,12 +1112,13 @@
                         <input type="text" id="new-subtask-projects-${p.id}" placeholder="Thêm bước thi công chi tiết (Nhấn Enter)" class="text-sm md:text-base p-2.5 border border-gray-300 rounded-md flex-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm" onkeypress="if(event.key === 'Enter') addSubtask('projects', '${p.id}')">
                         <button onclick="addSubtask('projects', '${p.id}')" class="bg-indigo-100 text-indigo-700 px-4 rounded-md hover:bg-indigo-200 text-sm font-bold shadow-sm"><i class="fa-solid fa-plus"></i></button>
                     </div>
+
                     ${profitHtml}
                 </div>`;
             }).join('');
         };
 
-        /* --- IMPORT/EXPORT CSV --- */
+        /* --- LOGIC CƠ SỞ DỮ LIỆU & IMPORT/EXPORT KHÁC --- */
         window.importCSV = function(event) {
             const file = event.target.files[0]; if(!file) return;
             const reader = new FileReader();
@@ -1306,7 +1221,7 @@
             const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `Xuat_PCCC_${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(url);
         };
 
-        /* --- TÀI CHÍNH QUỸ --- */
+        /* --- QUẢN LÝ TÀI CHÍNH --- */
         window.submitFund = async function(e) {
             e.preventDefault(); 
             if(!window.currentUser) return;
@@ -1317,31 +1232,45 @@
             const type = typeEl ? typeEl.value : 'thu'; 
             const amount = parseInt(document.getElementById('f-amount').value) || 0; 
             const desc = document.getElementById('f-desc').value;
+            
             const payload = { type, amount, desc, createdAt: Date.now() };
             
             try {
                 const docRef = await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'funds'), payload);
-                e.target.reset(); hideModal('modal-fund'); showToast("Đã lưu giao dịch!"); 
+                e.target.reset(); 
+                hideModal('modal-fund'); 
+                showToast("Đã lưu giao dịch!"); 
                 syncToGoogleSheets('ADD', 'funds', docRef.id, payload);
-            } catch (err) { alert("Lỗi: " + err.message); } finally { if(btn) btn.innerText = "LƯU GIAO DỊCH"; }
+            } catch (err) { 
+                alert("Lỗi: " + err.message); 
+            } finally {
+                if(btn) btn.innerText = "LƯU GIAO DỊCH";
+            }
         }
 
         window.renderFunds = function() {
             const tbody = document.getElementById('funds-table-body'); 
             const data = window.allFunds.sort((a,b) => b.createdAt - a.createdAt);
+            
             let totalIn = 0, totalOut = 0; 
             data.forEach(d => { 
                 const amt = Number(d.amount) || 0;
-                if(d.type === 'thu') totalIn += amt; else totalOut += amt; 
+                if(d.type === 'thu') totalIn += amt; 
+                else totalOut += amt; 
             });
             
             document.getElementById('total-in').innerText = formatMoney(totalIn); 
             document.getElementById('total-out').innerText = formatMoney(totalOut);
+            
             const total = formatMoney(totalIn - totalOut); 
             document.getElementById('total-fund-page').innerText = total; 
-            const dashF = document.getElementById('dash-total-fund'); if(dashF) dashF.innerText = total;
+            const dashF = document.getElementById('dash-total-fund'); 
+            if(dashF) dashF.innerText = total;
             
-            if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="3" class="text-center py-8 text-gray-500 text-sm md:text-base font-bold">Chưa có giao dịch.</td></tr>`; return; }
+            if(data.length === 0) { 
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-8 text-gray-500 text-sm md:text-base font-bold">Chưa có giao dịch.</td></tr>`; 
+                return; 
+            }
             tbody.innerHTML = data.map(f => `
                 <tr class="hover:bg-gray-50">
                     <td class="py-3 px-4 text-gray-600 whitespace-nowrap text-xs md:text-sm font-bold">${new Date(f.createdAt).toLocaleDateString('vi-VN')}</td>
