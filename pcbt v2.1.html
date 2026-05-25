@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý PCCC & CNCH - Tổ Bình Tuyền</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
+        .active-tab { border-left: 4px solid #ef4444; background-color: #fee2e2; color: #b91c1c; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.2s; }
+        .modal-content { background: white; width: 100%; max-width: 750px; border-radius: 12px; padding: 20px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 14px; display: none; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        /* Style cho input inline (Sửa trực tiếp) */
+        .inline-edit { background: transparent; border: 1px solid transparent; border-radius: 4px; transition: all 0.2s; padding: 2px 4px; margin: -2px -4px; width: calc(100% + 8px); outline: none; }
+        .inline-edit:hover { background: #fef2f2; border-color: #fca5a5; }
+        .inline-edit:focus { background: #ffffff; border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); }
+        select.inline-edit { appearance: none; cursor: pointer; }
+
+        /* Checklist Subtasks Custom */
+        .task-checkbox:checked + div { text-decoration: line-through; color: #9ca3af; }
+
+        /* Chatbot UI */
+        #chatbot-widget { position: fixed; bottom: 80px; right: 20px; z-index: 45; display: flex; flex-direction: column; align-items: flex-end; }
+        #chat-window { width: 350px; height: 500px; max-height: calc(100vh - 160px); max-width: calc(100vw - 40px); background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); display: none; flex-direction: column; overflow: hidden; border: 1px solid #e5e7eb; margin-bottom: 15px; }
+        #chat-header { background: #8b5cf6; color: white; padding: 12px 16px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        #chat-messages { flex: 1; overflow-y: auto; padding: 12px; background: #f9fafb; display: flex; flex-direction: column; gap: 8px; }
+        .chat-msg { max-width: 85%; padding: 8px 12px; border-radius: 8px; font-size: 14px; line-height: 1.4; word-wrap: break-word;}
+        .msg-ai { background: white; border: 1px solid #e5e7eb; align-self: flex-start; border-bottom-left-radius: 0; }
+        .msg-user { background: #8b5cf6; color: white; align-self: flex-end; border-bottom-right-radius: 0; }
+        #chat-input-area { padding: 10px; background: white; border-top: 1px solid #e5e7eb; display: flex; gap: 8px; }
+        #chat-input { flex: 1; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 20px; outline: none; font-size: 14px; }
+        #chat-input:focus { border-color: #8b5cf6; }
+        #chat-send { background: #8b5cf6; color: white; width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;}
+        #chat-send:hover { background: #7c3aed; }
+        .chat-toggle-btn { width: 56px; height: 56px; background: #8b5cf6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.4); cursor: pointer; transition: 0.2s;}
+        .chat-toggle-btn:hover { transform: scale(1.05); }
+        .typing-indicator span { display: inline-block; width: 6px; height: 6px; background-color: #8b5cf6; border-radius: 50%; margin: 0 2px; animation: bounce 1.4s infinite ease-in-out both; }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-800 text-sm md:text-base">
+
+    <!-- HIỆU ỨNG THÔNG BÁO VÀ LOADING -->
+    <div id="toast">Thành công!</div>
+    <div id="loading">
+        <i class="fa-solid fa-circle-notch fa-spin text-4xl text-red-600 mb-3"></i>
+        <p class="text-gray-700 font-medium text-sm md:text-base mt-2">Đang kết nối hệ thống Cloud...</p>
+    </div>
+
+    <!-- SIDEBAR MÁY TÍNH -->
+    <aside class="w-64 bg-white shadow-lg flex flex-col justify-between hidden md:flex z-10">
+        <div>
+            <div class="h-16 flex items-center justify-center border-b border-gray-200 bg-red-700 text-white">
+                <i class="fa-solid fa-fire-extinguisher text-xl mr-2"></i>
+                <h1 class="text-base font-bold">PCCC BÌNH TUYỀN</h1>
+            </div>
+            <div class="p-4">
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Quản lý chuyên môn</div>
+                <nav class="space-y-1">
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg active-tab hover:bg-red-50 text-gray-700 transition-colors"><i class="fa-solid fa-chart-line w-6"></i> Tổng quan</button>
+                    <button onclick="switchTab('facilities')" id="tab-facilities" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-red-50 text-gray-700 transition-colors"><i class="fa-solid fa-building w-6"></i> Cơ sở quản lý</button>
+                    <button onclick="switchTab('tasks')" id="tab-tasks" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-red-50 text-gray-700 transition-colors"><i class="fa-solid fa-list-check w-6"></i> Phân công nhiệm vụ</button>
+                </nav>
+
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-6">Quản lý nội bộ</div>
+                <nav class="space-y-1">
+                    <button onclick="switchTab('finance')" id="tab-finance" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-red-50 text-gray-700 transition-colors"><i class="fa-solid fa-wallet w-6"></i> Tài chính - Quỹ tổ</button>
+                    <button onclick="switchTab('projects')" id="tab-projects" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-red-50 text-gray-700 transition-colors"><i class="fa-solid fa-helmet-safety w-6"></i> Dự án thi công</button>
+                </nav>
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-200">
+            <div id="cloud-status" class="bg-red-50 text-red-600 px-3 py-2 rounded-lg flex items-center gap-2 border border-red-200 mb-4">
+                <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                <span class="text-xs font-bold" id="cloud-text">Đang kết nối...</span>
+            </div>
+            <div id="sync-status" class="bg-blue-50 text-blue-600 px-3 py-2 rounded-lg flex items-center gap-2 border border-blue-200 mb-4 hidden">
+                <i class="fa-brands fa-google text-xs"></i>
+                <span class="text-xs font-bold" id="sync-text">Đã đồng bộ Sheets</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-bold mr-3 text-sm">ĐU</div>
+                <div>
+                    <p class="text-sm font-bold">Tổ Bình Tuyền</p>
+                    <p class="text-xs text-green-600 font-bold">Sẵn sàng nhiệm vụ</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MÀN HÌNH HIỂN THỊ CHÍNH -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="md:hidden h-14 bg-red-700 text-white flex items-center px-4 justify-between z-20">
+            <div class="flex items-center"><i class="fa-solid fa-fire-extinguisher mr-2 text-lg"></i><span class="font-bold text-base">PCCC BÌNH TUYỀN</span></div>
+            <button id="mobileMenuBtn" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars text-xl"></i></button>
+        </header>
+        
+        <!-- SIDEBAR ĐIỆN THOẠI -->
+        <div id="mobile-sidebar" class="hidden md:hidden fixed inset-0 z-40 flex">
+            <div class="fixed inset-0 bg-gray-600 bg-opacity-75" onclick="toggleMobileMenu()"></div>
+            <div class="relative flex-1 flex flex-col max-w-[75%] w-full bg-white">
+                <div class="h-14 bg-red-700 flex items-center px-4 text-white font-bold justify-between text-base">
+                    <span>MENU</span><i class="fa-solid fa-xmark text-xl cursor-pointer" onclick="toggleMobileMenu()"></i>
+                </div>
+                <div class="p-3 space-y-2 flex-1 overflow-y-auto">
+                    <button onclick="switchTab('dashboard'); toggleMobileMenu()" class="w-full text-left px-4 py-3 text-sm font-bold rounded-lg hover:bg-gray-100"><i class="fa-solid fa-chart-line w-6 text-gray-500"></i> Tổng quan</button>
+                    <button onclick="switchTab('facilities'); toggleMobileMenu()" class="w-full text-left px-4 py-3 text-sm font-bold rounded-lg hover:bg-gray-100"><i class="fa-solid fa-building w-6 text-gray-500"></i> Cơ sở quản lý</button>
+                    <button onclick="switchTab('tasks'); toggleMobileMenu()" class="w-full text-left px-4 py-3 text-sm font-bold rounded-lg hover:bg-gray-100"><i class="fa-solid fa-list-check w-6 text-gray-500"></i> Giao việc</button>
+                    <button onclick="switchTab('finance'); toggleMobileMenu()" class="w-full text-left px-4 py-3 text-sm font-bold rounded-lg hover:bg-gray-100"><i class="fa-solid fa-wallet w-6 text-gray-500"></i> Quỹ Tổ</button>
+                    <button onclick="switchTab('projects'); toggleMobileMenu()" class="w-full text-left px-4 py-3 text-sm font-bold rounded-lg hover:bg-gray-100"><i class="fa-solid fa-helmet-safety w-6 text-gray-500"></i> Dự án thi công</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KHU VỰC NỘI DUNG TABS CHÍNH -->
+        <div class="flex-1 overflow-y-auto p-3 md:p-6 lg:p-8 relative z-0">
+            
+            <!-- 1. TỔNG QUAN -->
+            <div id="content-dashboard" class="tab-content active max-w-7xl mx-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl md:text-2xl font-bold text-gray-800">Bảng Điều Khiển</h2>
+                    <div class="flex gap-2">
+                        <button onclick="forceSyncToSheets()" class="bg-white text-blue-600 border border-blue-200 text-xs font-bold px-3 py-1.5 rounded shadow-sm hover:bg-blue-50 transition flex items-center gap-1">
+                            <i class="fa-brands fa-google"></i> Đồng bộ Sheets
+                        </button>
+                        <span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1.5 rounded border border-green-400 hidden md:block shadow-sm">Dữ liệu thực Realtime</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 border-l-4 border-l-blue-500">
+                        <div class="flex items-center justify-between">
+                            <div><p class="text-xs md:text-sm text-gray-500 font-bold mb-1">Tổng cơ sở</p><h3 class="text-2xl md:text-3xl font-bold text-gray-800" id="dash-total-facilities">0</h3></div>
+                            <div class="p-2.5 md:p-3 bg-blue-100 rounded-full text-blue-600 text-lg md:text-xl"><i class="fa-solid fa-building"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 border-l-4 border-l-yellow-500">
+                        <div class="flex items-center justify-between">
+                            <div><p class="text-xs md:text-sm text-gray-500 font-bold mb-1">Việc tồn đọng</p><h3 class="text-2xl md:text-3xl font-bold text-gray-800" id="dash-total-tasks">0</h3></div>
+                            <div class="p-2.5 md:p-3 bg-yellow-100 rounded-full text-yellow-600 text-lg md:text-xl"><i class="fa-solid fa-list-check"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 border-l-4 border-l-indigo-500">
+                        <div class="flex items-center justify-between">
+                            <div><p class="text-xs md:text-sm text-gray-500 font-bold mb-1">Đang thi công</p><h3 class="text-2xl md:text-3xl font-bold text-gray-800" id="dash-projects">0</h3></div>
+                            <div class="p-2.5 md:p-3 bg-indigo-100 rounded-full text-indigo-600 text-lg md:text-xl"><i class="fa-solid fa-trowel-bricks"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 border-l-4 border-l-green-500">
+                        <div class="flex items-center justify-between">
+                            <div class="overflow-hidden pr-2"><p class="text-xs md:text-sm text-gray-500 font-bold mb-1">Tồn Quỹ Tổ</p><h3 class="text-lg md:text-xl font-bold text-gray-800 truncate" id="dash-total-fund">0 ₫</h3></div>
+                            <div class="p-2.5 md:p-3 bg-green-100 rounded-full text-green-600 text-lg md:text-xl flex-shrink-0"><i class="fa-solid fa-money-bill-wave"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                        <h3 class="text-sm md:text-base font-bold mb-4 text-gray-700"><i class="fa-solid fa-chart-pie text-blue-500 mr-2"></i> Phân loại cơ sở</h3>
+                        <div class="relative h-60 w-full flex justify-center"><canvas id="facilityChart"></canvas></div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
+                        <div class="px-5 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-lg">
+                            <h3 class="text-sm md:text-base font-bold text-gray-700"><i class="fa-solid fa-clock-rotate-left text-red-500 mr-2"></i> Nhiệm vụ cần xử lý</h3>
+                            <button onclick="switchTab('tasks')" class="text-xs md:text-sm text-red-600 hover:text-red-800 font-bold px-2 py-1 bg-red-100 rounded">Xem tất cả</button>
+                        </div>
+                        <div class="divide-y divide-gray-200 flex-1 overflow-y-auto max-h-60" id="dash-tasks-list"></div>
+                    </div>
+                </div>
+
+                <!-- BẢNG ĐÁNH GIÁ NĂNG LỰC KPI -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+                    <div class="px-5 py-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                        <h3 class="text-sm md:text-base font-bold text-gray-700"><i class="fa-solid fa-ranking-star text-blue-500 mr-2"></i> Đánh giá năng lực & Hiệu suất nhân sự (KPI)</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-white">
+                                <tr>
+                                    <th class="px-5 py-3 text-left font-bold text-gray-600">Thành viên</th>
+                                    <th class="px-5 py-3 text-center font-bold text-gray-600">Tổng giao</th>
+                                    <th class="px-5 py-3 text-center font-bold text-emerald-600">Hoàn thành</th>
+                                    <th class="px-5 py-3 text-center font-bold text-red-600">Quá hạn</th>
+                                    <th class="px-5 py-3 text-right font-bold text-blue-600">Tỷ lệ (KPI)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 bg-white" id="dash-performance-list">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. TAB CƠ SỞ QUẢN LÝ -->
+            <div id="content-facilities" class="tab-content max-w-full mx-auto">
+                <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-4 gap-3">
+                    <h2 class="text-xl md:text-2xl font-bold text-gray-800">Danh Sách Cơ Sở</h2>
+                    <div class="flex flex-wrap gap-2 w-full xl:w-auto items-center">
+                        <div class="relative flex-1 min-w-[200px]">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400 text-sm"></i>
+                            <input type="text" id="search-facility" placeholder="Tìm tên, số HS, PA, loại hình..." class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm md:text-base focus:outline-none focus:ring-1 focus:ring-red-500 shadow-sm" onkeyup="renderFacilities()">
+                        </div>
+                        
+                        <div class="relative min-w-[180px]">
+                            <select id="filter-status-facility" onchange="renderFacilities()" class="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-md text-xs md:text-sm font-medium bg-white text-gray-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500 appearance-none cursor-pointer">
+                                <option value="all">Tất cả trạng thái</option>
+                                <optgroup label="Hồ sơ & Phương án">
+                                    <option value="thieu-hs">⚠️ Thiếu Số hồ sơ</option>
+                                    <option value="co-hs">✅ Đã có Số hồ sơ</option>
+                                    <option value="thieu-pa">⚠️ Thiếu Số PA</option>
+                                    <option value="co-pa">✅ Đã có Số PA</option>
+                                </optgroup>
+                                <optgroup label="Cán bộ & PC08">
+                                    <option value="thieu-cbql">⚠️ Chưa phân công CBQL</option>
+                                    <option value="co-cbql">✅ Đã phân công CBQL</option>
+                                    <option value="thieu-nguoi-lap">⚠️ Thiếu người lập PC08</option>
+                                    <option value="co-nguoi-lap">✅ Có người lập PC08</option>
+                                    <option value="thieu-ngay-ky">⚠️ Chưa ký PC08</option>
+                                    <option value="co-ngay-ky">✅ Đã ký PC08</option>
+                                </optgroup>
+                                <optgroup label="Thực địa 2026">
+                                    <option value="thieu-hl">⚠️ Chưa Huấn luyện</option>
+                                    <option value="co-hl">✅ Đã Huấn luyện</option>
+                                    <option value="thieu-kt">⚠️ Chưa Kiểm tra</option>
+                                    <option value="co-kt">✅ Đã Kiểm tra</option>
+                                </optgroup>
+                            </select>
+                            <i class="fa-solid fa-filter absolute right-3 top-2.5 text-gray-500 text-xs pointer-events-none"></i>
+                        </div>
+
+                        <div class="relative min-w-[140px]">
+                            <select id="sort-facility" onchange="renderFacilities()" class="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-md text-xs md:text-sm font-medium bg-white text-gray-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500 appearance-none cursor-pointer">
+                                <option value="date-desc">Mới nhất (Mở HS)</option>
+                                <option value="date-asc">Cũ nhất (Mở HS)</option>
+                                <option value="name-asc">Tên A-Z</option>
+                                <option value="name-desc">Tên Z-A</option>
+                                <option value="type-asc">Theo Loại hình</option>
+                            </select>
+                            <i class="fa-solid fa-arrow-down-short-wide absolute right-3 top-2.5 text-gray-500 text-xs pointer-events-none"></i>
+                        </div>
+
+                        <button onclick="downloadCSVTemplate()" class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-xs md:text-sm hover:bg-gray-50 font-medium shadow-sm"><i class="fa-solid fa-download text-blue-500 mr-1"></i> Mẫu Nhập</button>
+                        <label class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-xs md:text-sm hover:bg-gray-50 cursor-pointer font-medium shadow-sm mb-0">
+                            <i class="fa-solid fa-file-import text-orange-500 mr-1"></i> Up File
+                            <input type="file" class="hidden" id="file-upload-csv" accept=".csv" onchange="importCSV(event)">
+                        </label>
+                        <button onclick="exportToCSV()" class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-xs md:text-sm hover:bg-gray-50 font-medium shadow-sm"><i class="fa-solid fa-file-export text-green-600 mr-1"></i> Xuất</button>
+                        <button onclick="deleteAllFacilities()" class="bg-gray-800 text-white px-3 py-2 rounded-md text-xs md:text-sm hover:bg-black font-medium shadow-sm"><i class="fa-solid fa-dumpster-fire mr-1"></i> Xóa Tất Cả</button>
+                        <button onclick="openFacilityModal()" class="bg-red-700 text-white px-4 py-2 rounded-md text-sm md:text-base hover:bg-red-800 font-bold shadow-sm"><i class="fa-solid fa-plus mr-1"></i> Thêm</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+                    <div class="bg-yellow-50 text-yellow-800 text-xs md:text-sm px-3 py-2 border-b border-yellow-200 flex items-center font-medium">
+                        <i class="fa-solid fa-lightbulb text-yellow-500 mr-2"></i> Mẹo: Bấm trực tiếp vào các chữ màu đen trong bảng để sửa nhanh thông tin. Hệ thống tự động đồng bộ khối đầy đủ sang Google Sheets.
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-2 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider w-10">STT</th>
+                                    <th class="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-1/4">Tên cơ sở / Loại hình</th>
+                                    <th class="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Cán bộ QL / Số HS / Ngày mở</th>
+                                    <th class="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Số PA / Người lập / Ký PA</th>
+                                    <th class="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Tình trạng 2026</th>
+                                    <th class="px-3 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="facilities-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. TAB GIAO VIỆC -->
+            <div id="content-tasks" class="tab-content max-w-5xl mx-auto">
+                <div class="flex justify-between items-center mb-4 md:mb-6">
+                    <h2 class="text-xl md:text-2xl font-bold text-gray-800">Phân Công Nhiệm Vụ</h2>
+                    <button onclick="openTaskModal()" class="bg-red-700 text-white px-4 py-2 rounded-md text-sm md:text-base hover:bg-red-800 font-bold shadow-sm"><i class="fa-solid fa-plus mr-2"></i> Giao việc mới</button>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden p-4 md:p-6">
+                    <div id="tasks-list" class="flex flex-col gap-3 md:gap-4"></div>
+                </div>
+            </div>
+
+            <!-- 4. TAB SỔ QUỸ -->
+            <div id="content-finance" class="tab-content max-w-5xl mx-auto">
+                <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">Sổ Quỹ Tổ Bình Tuyền</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-5 border-t-4 border-t-green-500 overflow-hidden"><p class="text-xs md:text-sm text-gray-500 font-bold mb-1">TỔNG THU</p><h3 class="text-lg md:text-2xl font-bold text-green-600 truncate" id="total-in">0 ₫</h3></div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-5 border-t-4 border-t-red-500 overflow-hidden"><p class="text-xs md:text-sm text-gray-500 font-bold mb-1">TỔNG CHI</p><h3 class="text-lg md:text-2xl font-bold text-red-600 truncate" id="total-out">0 ₫</h3></div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-5 border-t-4 border-t-blue-500 overflow-hidden"><p class="text-xs md:text-sm text-gray-500 font-bold mb-1">TỒN QUỸ</p><h3 class="text-lg md:text-2xl font-bold text-blue-600 truncate" id="total-fund-page">0 ₫</h3></div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-4 py-3 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                        <h3 class="text-sm md:text-base font-bold text-gray-800"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Lịch Sử Giao Dịch</h3>
+                        <button onclick="openModal('modal-fund')" class="text-xs md:text-sm bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 font-bold shadow-sm"><i class="fa-solid fa-plus mr-1"></i> Thêm GD</button>
+                    </div>
+                    <div class="p-0 overflow-x-auto">
+                        <table class="min-w-full text-sm md:text-base">
+                            <thead><tr class="border-b border-gray-200 bg-white"><th class="text-left py-3 px-4 text-gray-600 font-bold text-xs md:text-sm">Ngày tháng</th><th class="text-left py-3 px-4 text-gray-600 font-bold text-xs md:text-sm">Nội dung</th><th class="text-right py-3 px-4 text-gray-600 font-bold text-xs md:text-sm">Số tiền</th></tr></thead>
+                            <tbody class="divide-y divide-gray-100" id="funds-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. TAB DỰ ÁN THI CÔNG -->
+            <div id="content-projects" class="tab-content max-w-7xl mx-auto">
+                <div class="flex justify-between items-center mb-4 md:mb-6">
+                    <h2 class="text-xl md:text-2xl font-bold text-gray-800">Quản Lý Dự Án Thi Công</h2>
+                    <button onclick="openProjectModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm md:text-base hover:bg-indigo-700 font-bold shadow-sm"><i class="fa-solid fa-plus mr-1"></i> Thêm Dự án</button>
+                </div>
+                <div id="projects-list" class="flex flex-col gap-4 md:gap-6"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- CHATBOT WIDGET -->
+    <div id="chatbot-widget">
+        <div id="chat-window">
+            <div id="chat-header">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-robot text-lg"></i>
+                    <span>Trợ lý AI Bình Tuyền</span>
+                </div>
+                <i class="fa-solid fa-xmark cursor-pointer hover:text-gray-200 text-lg" onclick="toggleChat()"></i>
+            </div>
+            <div id="chat-messages">
+                <div class="chat-msg msg-ai shadow-sm">
+                    Chào anh! Em là Trợ lý AI. Em đã được nạp dữ liệu quản lý hiện tại. Anh cần em đếm hồ sơ, kiểm tra tiến độ, hay thống kê ai đang giữ nhiều việc nhất ạ?
+                </div>
+            </div>
+            <div id="typing-indicator" class="typing-indicator hidden px-4 pb-2 text-gray-400">
+                <span class="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                <span class="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mx-1"></span>
+                <span class="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+            </div>
+            <div id="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Hỏi AI về dữ liệu..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <div id="chat-send" onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></div>
+            </div>
+        </div>
+        <div class="chat-toggle-btn" onclick="toggleChat()">
+            <i class="fa-solid fa-message"></i>
+        </div>
+    </div>
+
+    <!-- TẤT CẢ CÁC CỬA SỔ MODAL (POPUP) -->
+    
+    <!-- Modal Cơ sở -->
+    <div class="modal-overlay" id="modal-facility" onclick="closeModal(event, 'modal-facility')">
+        <div class="modal-content max-w-3xl" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h2 class="text-lg md:text-xl font-bold text-gray-800" id="modal-fac-title">Hồ Sơ Cơ Sở Mới</h2>
+                <i class="fa-solid fa-xmark text-xl text-gray-500 cursor-pointer hover:text-red-500" onclick="hideModal('modal-facility')"></i>
+            </div>
+            <form id="form-facility" onsubmit="submitFacility(event)">
+                <input type="hidden" id="f-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-3 md:mb-4">
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Tên cơ sở (*)</label>
+                        <input type="text" id="f-name" required class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-red-500 text-sm md:text-base">
+                    </div>
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Loại hình</label>
+                        <input type="text" id="f-fac-type" list="fac-type-list" placeholder="VD: Khách sạn, Karaoke..." class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-red-500 text-sm md:text-base">
+                        <datalist id="fac-type-list"></datalist>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-3 md:mb-4">
+                    <div><label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Số hồ sơ</label><input type="text" id="f-record-num" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-red-500 text-sm md:text-base"></div>
+                    <div><label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Số phương án</label><input type="text" id="f-plan-num" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-red-500 text-sm md:text-base" placeholder="VD: 12/PA"></div>
+                    <div><label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Ngày mở HS</label><input type="date" id="f-open-date" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-red-500 text-sm md:text-base"></div>
+                    <div><label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Thôn/Xóm</label><input type="text" id="f-village" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-red-500 text-sm md:text-base"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-3 md:mb-4">
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Cán bộ quản lý</label>
+                        <select id="f-manager" class="w-full p-2 border border-gray-300 rounded bg-white focus:ring-1 focus:ring-red-500 text-sm md:text-base">
+                            <option value="Chưa phân công">Chưa phân công</option><option value="Đ/c Dũng">Đ/c Dũng</option><option value="Đ/c Thiêm">Đ/c Thiêm</option><option value="Đ/c Trung">Đ/c Trung</option><option value="Đ/c Hải">Đ/c Hải</option><option value="Tổ trưởng">Tổ trưởng</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Ai XD PC08</label>
+                        <input type="text" id="f-pc08-builder" list="builder-list" placeholder="Nhập tên..." class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-red-500 text-sm md:text-base">
+                        <datalist id="builder-list">
+                            <option value="Đ/c Dũng"></option><option value="Đ/c Thiêm"></option><option value="Đ/c Trung"></option><option value="Đ/c Hải"></option>
+                        </datalist>
+                    </div>
+                    <div><label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Ngày ký PC08</label><input type="date" id="f-pc08-date" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-red-500 text-sm md:text-base"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 md:gap-4 mb-3 md:mb-4">
+                    <div><label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Ngày HL (Nếu có)</label><input type="date" id="f-trained-2026" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-red-500 text-sm md:text-base"></div>
+                    <div><label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Ngày KT (Nếu có)</label><input type="date" id="f-inspected-2026" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-red-500 text-sm md:text-base"></div>
+                </div>
+
+                <div class="mb-3 md:mb-4 bg-gray-50 p-3 md:p-4 rounded border border-gray-200">
+                    <label class="block text-sm font-bold text-gray-800 mb-2">Thành phần đi kiểm tra</label>
+                    <div class="flex flex-wrap gap-3 md:gap-4 mb-2">
+                        <label class="inline-flex items-center cursor-pointer"><input type="checkbox" value="Đ/c Dũng" class="w-4 h-4 text-red-600 rounded f-insp-cb border-gray-300 focus:ring-red-500"> <span class="ml-2 text-sm md:text-base text-gray-700">Đ/c Dũng</span></label>
+                        <label class="inline-flex items-center cursor-pointer"><input type="checkbox" value="Đ/c Thiêm" class="w-4 h-4 text-red-600 rounded f-insp-cb border-gray-300 focus:ring-red-500"> <span class="ml-2 text-sm md:text-base text-gray-700">Đ/c Thiêm</span></label>
+                        <label class="inline-flex items-center cursor-pointer"><input type="checkbox" value="Đ/c Trung" class="w-4 h-4 text-red-600 rounded f-insp-cb border-gray-300 focus:ring-red-500"> <span class="ml-2 text-sm md:text-base text-gray-700">Đ/c Trung</span></label>
+                        <label class="inline-flex items-center cursor-pointer"><input type="checkbox" value="Đ/c Hải" class="w-4 h-4 text-red-600 rounded f-insp-cb border-gray-300 focus:ring-red-500"> <span class="ml-2 text-sm md:text-base text-gray-700">Đ/c Hải</span></label>
+                    </div>
+                    <input type="text" id="f-inspector-other" placeholder="Người/Đoàn khác..." class="w-full p-2 border border-gray-300 rounded text-sm md:text-base focus:ring-1 focus:ring-red-500">
+                </div>
+
+                <div class="mb-3 md:mb-4">
+                    <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Đơn vị thi công PCCC</label>
+                    <input type="text" id="f-constructor" placeholder="Đơn vị thi công..." class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-red-500 text-sm md:text-base">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Ghi chú</label>
+                    <textarea id="f-notes" rows="2" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-red-500 text-sm md:text-base"></textarea>
+                </div>
+                <button type="submit" id="btn-submit-fac" class="w-full bg-red-700 text-white font-bold py-2.5 rounded text-base hover:bg-red-800 transition shadow-sm">LƯU CƠ SỞ</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Lịch sử cập nhật -->
+    <div class="modal-overlay" id="modal-history" onclick="closeModal(event, 'modal-history')">
+        <div class="modal-content max-w-xl" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h2 class="text-lg md:text-xl font-bold text-gray-800">Lịch sử cập nhật</h2>
+                <i class="fa-solid fa-xmark text-xl text-gray-500 cursor-pointer hover:text-red-500" onclick="hideModal('modal-history')"></i>
+            </div>
+            <div id="history-list" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
+        </div>
+    </div>
+
+    <!-- Modal Giao Việc -->
+    <div class="modal-overlay" id="modal-task" onclick="closeModal(event, 'modal-task')">
+        <div class="modal-content max-w-md" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h2 class="text-lg md:text-xl font-bold text-gray-800" id="modal-task-title">Giao Việc Mới</h2>
+                <i class="fa-solid fa-xmark text-xl text-gray-500 cursor-pointer hover:text-red-500" onclick="hideModal('modal-task')"></i>
+            </div>
+            <form id="form-task" onsubmit="submitTask(event)">
+                <input type="hidden" id="t-id">
+                <div class="mb-4">
+                    <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Nội dung công việc lớn (*)</label>
+                    <textarea id="t-title" required class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm md:text-base" rows="3"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-5">
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Người nhận chính</label>
+                        <select id="t-assignee" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm md:text-base">
+                            <option value="Đ/c Dũng">Đ/c Dũng</option>
+                            <option value="Đ/c Thiêm">Đ/c Thiêm</option>
+                            <option value="Đ/c Trung">Đ/c Trung</option>
+                            <option value="Đ/c Hải">Đ/c Hải</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Hạn chót (KPI)</label>
+                        <input type="date" id="t-deadline" required class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm md:text-base">
+                    </div>
+                </div>
+                <button type="submit" id="btn-submit-task" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded text-base hover:bg-blue-700 transition shadow-sm">GIAO VIỆC</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Dự án thi công -->
+    <div class="modal-overlay" id="modal-project" onclick="closeModal(event, 'modal-project')">
+        <div class="modal-content max-w-2xl" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h2 class="text-lg md:text-xl font-bold text-gray-800" id="modal-proj-title">Dự Án Mới</h2>
+                <i class="fa-solid fa-xmark text-xl text-gray-500 cursor-pointer hover:text-indigo-500" onclick="hideModal('modal-project')"></i>
+            </div>
+            <form id="form-project" onsubmit="submitProject(event)">
+                <input type="hidden" id="p-id">
+                <div class="mb-3 md:mb-4">
+                    <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Tên Công Trình (*)</label>
+                    <input type="text" id="p-name" required class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 text-sm md:text-base">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-3 md:mb-4">
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Chủ đầu tư / Địa chỉ</label>
+                        <input type="text" id="p-client" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 text-sm md:text-base">
+                    </div>
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Phụ trách (Giao cho ai)</label>
+                        <select id="p-assignee" class="w-full p-2 border border-gray-300 rounded bg-white focus:ring-1 focus:ring-indigo-500 text-sm md:text-base">
+                            <option value="Đ/c Dũng">Đ/c Dũng</option><option value="Đ/c Thiêm">Đ/c Thiêm</option><option value="Đ/c Trung">Đ/c Trung</option><option value="Đ/c Hải">Đ/c Hải</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-3 md:mb-4 bg-gray-50 p-3 rounded border border-gray-200">
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-gray-800 mb-1">Giá Hợp đồng (Thu)</label>
+                        <input type="number" id="p-value" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 text-base md:text-lg font-bold text-green-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-gray-800 mb-1">Giá cốt (Chi)</label>
+                        <input type="number" id="p-cost" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 text-base md:text-lg font-bold text-red-600">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-5">
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Trạng thái</label>
+                        <select id="p-status" class="w-full p-2 border border-gray-300 rounded bg-white focus:ring-1 focus:ring-indigo-500 text-sm md:text-base">
+                            <option value="Khảo sát">Đang khảo sát</option>
+                            <option value="Thi công">Đang thi công</option>
+                            <option value="Nghiệm thu">Đã nghiệm thu</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Tiến độ (%)</label>
+                        <input type="number" id="p-progress" min="0" max="100" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 text-sm md:text-base font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Dự kiến xong</label>
+                        <input type="date" id="p-deadline" class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 text-sm md:text-base">
+                    </div>
+                </div>
+                <button type="submit" id="btn-submit-proj" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded text-base hover:bg-indigo-700 transition shadow-sm">LƯU DỰ ÁN</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Lợi nhuận -->
+    <div class="modal-overlay" id="modal-profit" onclick="closeModal(event, 'modal-profit')">
+        <div class="modal-content max-w-md" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h2 class="text-lg md:text-xl font-bold text-gray-800">Xử Lý Lợi Nhuận</h2>
+                <i class="fa-solid fa-xmark text-xl text-gray-500 cursor-pointer hover:text-green-500" onclick="hideModal('modal-profit')"></i>
+            </div>
+            <form id="form-profit" onsubmit="submitProfit(event)">
+                <input type="hidden" id="pr-id">
+                <input type="hidden" id="pr-amount">
+                <input type="hidden" id="pr-name">
+                <div class="mb-5 text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                    <p class="text-sm md:text-base text-gray-600 font-bold mb-1">Lợi nhuận sau khi trừ chi phí</p>
+                    <p class="text-2xl md:text-3xl font-bold text-green-600" id="pr-display-amount">0 ₫</p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm md:text-base font-bold text-gray-800 mb-3">Đích đến của lợi nhuận này:</label>
+                    <div class="space-y-3">
+                        <label class="flex items-center p-3 border border-gray-200 rounded cursor-pointer hover:bg-green-50 transition">
+                            <input type="radio" name="pr-dest" value="quy_to" checked class="w-4 h-4 text-green-600 focus:ring-green-500">
+                            <span class="ml-3 text-sm md:text-base font-bold text-gray-800">Chuyển vào Quỹ Tổ</span>
+                        </label>
+                        <label class="flex items-center p-3 border border-gray-200 rounded cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="pr-dest" value="khac" class="w-4 h-4 text-gray-600 focus:ring-gray-500">
+                            <span class="ml-3 text-sm md:text-base font-bold text-gray-800">Khác (Chia, liên hoan...)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-5" id="pr-note-container" style="display:none;">
+                    <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Ghi chú cụ thể</label>
+                    <input type="text" id="pr-note" class="w-full p-2 border border-gray-300 rounded text-sm md:text-base focus:ring-1 focus:ring-green-500" placeholder="Nhập ghi chú...">
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white font-bold py-2.5 rounded text-base hover:bg-green-700 transition shadow-sm">XÁC NHẬN KẾT TOÁN</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Thu Chi Quỹ -->
+    <div class="modal-overlay" id="modal-fund" onclick="closeModal(event, 'modal-fund')">
+        <div class="modal-content max-w-md" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h2 class="text-lg md:text-xl font-bold text-gray-800">Thêm Giao Dịch Quỹ</h2>
+                <i class="fa-solid fa-xmark text-xl text-gray-500 cursor-pointer hover:text-red-500" onclick="hideModal('modal-fund')"></i>
+            </div>
+            <form id="form-fund" onsubmit="submitFund(event)">
+                <div class="flex gap-3 md:gap-4 mb-4">
+                    <label class="flex-1 flex items-center justify-center p-3 border border-gray-200 rounded cursor-pointer hover:bg-gray-50 transition">
+                        <input type="radio" name="f-type" value="thu" checked class="w-4 h-4 text-green-600 focus:ring-green-500">
+                        <span class="ml-2 font-bold text-green-600 text-sm md:text-base">Khoản Thu</span>
+                    </label>
+                    <label class="flex-1 flex items-center justify-center p-3 border border-gray-200 rounded cursor-pointer hover:bg-gray-50 transition">
+                        <input type="radio" name="f-type" value="chi" class="w-4 h-4 text-red-600 focus:ring-red-500">
+                        <span class="ml-2 font-bold text-red-600 text-sm md:text-base">Khoản Chi</span>
+                    </label>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Số tiền (VNĐ) (*)</label>
+                    <input type="number" id="f-amount" required class="w-full p-3 border border-gray-300 rounded font-bold text-lg md:text-xl text-blue-600 focus:ring-1 focus:ring-blue-500" placeholder="Ví dụ: 1000000">
+                </div>
+                <div class="mb-5">
+                    <label class="block text-xs md:text-sm font-bold text-gray-700 mb-1">Nội dung giải trình</label>
+                    <input type="text" id="f-desc" required class="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm md:text-base" placeholder="Mua sắm, bồi dưỡng...">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded text-base hover:bg-blue-700 transition shadow-sm">LƯU GIAO DỊCH</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Setup -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyATndQjyuApKV3CZtt31VS6C8KSTABzz_Q", authDomain: "cvbt-v1.firebaseapp.com", projectId: "cvbt-v1", storageBucket: "cvbt-v1.firebasestorage.app", messagingSenderId: "1001128258564", appId: "1:1001128258564:web:efba18c5004176ddaed951", measurementId: "G-XVFYKNTT3S" };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pccc-binh-tuyen-app';
+        
+        const app = initializeApp(firebaseConfig); 
+        const auth = getAuth(app);
+        window.db = getFirestore(app); 
+        window.collection = collection; 
+        window.addDoc = addDoc; 
+        window.doc = doc; 
+        window.updateDoc = updateDoc; 
+        window.deleteDoc = deleteDoc; 
+        window.appId = appId;
+
+        const initAuth = async () => { 
+            try { 
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); 
+                else await signInAnonymously(auth); 
+            } catch (e) { console.error(e); } 
+        };
+
+        window.allFacilities = []; 
+        window.allTasks = []; 
+        window.allFunds = []; 
+        window.allProjects = []; 
+        window.currentUser = null;
+
+        initAuth();
+        
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.currentUser = user; 
+                document.getElementById('loading').style.display = 'none';
+                const cloudEl = document.getElementById('cloud-status');
+                cloudEl.className = cloudEl.className.replace(/bg-red-50|text-red-600|border-red-200/g, '');
+                cloudEl.classList.add('bg-green-50', 'text-green-600', 'border-green-200');
+                cloudEl.querySelector('div').className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
+                document.getElementById('cloud-text').innerText = 'Đã kết nối mây';
+                startRealtimeListeners();
+            }
+        });
+
+        function startRealtimeListeners() {
+            if (!window.currentUser) return;
+            onSnapshot(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'facilities'), (snap) => { window.allFacilities = snap.docs.map(d => ({id: d.id, ...d.data()})); window.renderFacilities(); updateDashboardStats(); });
+            onSnapshot(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'tasks'), (snap) => { window.allTasks = snap.docs.map(d => ({id: d.id, ...d.data()})); window.renderTasks(); updateDashboardStats(); });
+            onSnapshot(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'funds'), (snap) => { window.allFunds = snap.docs.map(d => ({id: d.id, ...d.data()})); window.renderFunds(); });
+            onSnapshot(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'projects'), (snap) => { window.allProjects = snap.docs.map(d => ({id: d.id, ...d.data()})); window.renderProjects(); updateDashboardStats(); });
+        }
+
+        const ctx = document.getElementById('facilityChart').getContext('2d');
+        window.myChart = new Chart(ctx, { type: 'doughnut', data: { labels: ['Đang tải...'], datasets: [{ data: [1], backgroundColor: ['#9ca3af'], borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 12 } } } } } });
+    </script>
+
+    <!-- TOÀN BỘ LOGIC CỦA ỨNG DỤNG -->
+    <script>
+        const ZALO_PHONES = { "Đ/c Dũng": "0335016599", "Đ/c Thiêm": "0987654321", "Đ/c Trung": "0912345678", "Đ/c Hải": "0900000000" };
+        const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwaGcRumou-b52QBS4doenpWrwuTso0Hb3-cT87X6RSnLZqcSHn2fGQFxhnEWvHAeFU/exec"; 
+
+        async function syncToGoogleSheets(action, collectionName, documentId, dataObject) {
+            if (!GOOGLE_SHEETS_WEBHOOK_URL) return;
+            const syncEl = document.getElementById('sync-status');
+            const syncText = document.getElementById('sync-text');
+            if(syncEl) {
+                syncEl.classList.remove('hidden');
+                syncText.innerText = "Đang đồng bộ Sheets...";
+                syncEl.className = syncEl.className.replace(/bg-blue-50|text-blue-600|border-blue-200/g, 'bg-yellow-50 text-yellow-600 border-yellow-200');
+            }
+            try {
+                fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
+                    method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: action, collection: collectionName, id: documentId, data: dataObject, timestamp: new Date().toLocaleString('vi-VN') })
+                });
+                if(syncEl) {
+                    setTimeout(() => {
+                        syncText.innerText = "Đã đồng bộ Sheets";
+                        syncEl.className = syncEl.className.replace(/bg-yellow-50 text-yellow-600 border-yellow-200/g, 'bg-blue-50 text-blue-600 border-blue-200');
+                        setTimeout(() => syncEl.classList.add('hidden'), 2000);
+                    }, 1000);
+                }
+            } catch (error) { console.error("Lỗi đồng bộ Google Sheets:", error); }
+        }
+
+        window.forceSyncToSheets = async function() {
+            if (!GOOGLE_SHEETS_WEBHOOK_URL) return alert("Chưa cấu hình link Sheets Webhook!");
+            if(!confirm("Hành động này sẽ ghi đè đồng bộ toàn bộ dữ liệu hiện tại lên Google Sheets. Bạn có muốn tiếp tục?")) return;
+            showToast("Bắt đầu đẩy gói đồng bộ dự phòng...");
+            if(window.allFacilities.length > 0) await syncToGoogleSheets('FULL_SYNC', 'facilities', 'all', window.allFacilities);
+            if(window.allTasks.length > 0) await syncToGoogleSheets('FULL_SYNC', 'tasks', 'all', window.allTasks);
+            if(window.allFunds.length > 0) await syncToGoogleSheets('FULL_SYNC', 'funds', 'all', window.allFunds);
+            if(window.allProjects.length > 0) await syncToGoogleSheets('FULL_SYNC', 'projects', 'all', window.allProjects);
+            showToast("Đã gửi lệnh đồng bộ toàn bộ!");
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(el => el.classList.remove('active-tab'));
+            document.getElementById('content-' + tabId).classList.add('active');
+            const tabBtn = document.getElementById('tab-' + tabId); if(tabBtn) tabBtn.classList.add('active-tab');
+            if(tabId === 'dashboard' && window.myChart) window.myChart.update();
+        }
+
+        function toggleMobileMenu() { document.getElementById('mobile-sidebar').classList.toggle('hidden'); }
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(e, id) { if(e.target.id === id) hideModal(id); }
+        function hideModal(id) { document.getElementById(id).classList.remove('active'); }
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
+        function formatMoney(n) { return n ? new Intl.NumberFormat('vi-VN').format(n) + ' ₫' : '0 ₫'; }
+
+        function updateDashboardStats() {
+            document.getElementById('dash-total-facilities').innerText = window.allFacilities.length;
+            document.getElementById('dash-total-tasks').innerText = window.allTasks.filter(t => !t.isCompleted).length;
+            document.getElementById('dash-projects').innerText = window.allProjects.filter(p => p.status === 'Thi công').length;
+            
+            // Render Tasks Cần xử lý
+            const dashTasksEl = document.getElementById('dash-tasks-list');
+            const recentTasks = window.allTasks.filter(t => !t.isCompleted).sort((a,b) => new Date(a.deadline) - new Date(b.deadline)).slice(0, 5);
+            if(recentTasks.length === 0) dashTasksEl.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm font-bold mt-4">Không có nhiệm vụ tồn đọng.</div>';
+            else {
+                dashTasksEl.innerHTML = recentTasks.map(t => {
+                    const isOverdue = new Date(t.deadline + 'T23:59:59') < new Date();
+                    return `<div class="px-5 py-3.5 flex items-center justify-between hover:bg-gray-50"><div><p class="text-sm md:text-base font-bold text-gray-800">${t.title}</p><p class="text-xs md:text-sm mt-1 ${isOverdue ? 'text-red-600 font-bold' : 'text-gray-500 font-medium'}">Hạn: ${new Date(t.deadline).toLocaleDateString('vi-VN')}</p></div><span class="bg-blue-100 text-blue-700 text-xs md:text-sm px-2.5 py-1 rounded font-bold shadow-sm">${t.assignee}</span></div>`;
+                }).join('');
+            }
+
+            // ĐÁNH GIÁ NĂNG LỰC KPI
+            const members = ['Đ/c Dũng', 'Đ/c Thiêm', 'Đ/c Trung', 'Đ/c Hải'];
+            const perfList = document.getElementById('dash-performance-list');
+            if (perfList) {
+                perfList.innerHTML = members.map(m => {
+                    const memberTasks = window.allTasks.filter(t => t.assignee === m);
+                    const total = memberTasks.length;
+                    const completed = memberTasks.filter(t => t.isCompleted).length;
+                    const overdue = memberTasks.filter(t => !t.isCompleted && t.deadline && new Date(t.deadline + 'T23:59:59') < new Date()).length;
+                    const kpi = total === 0 ? 0 : Math.round((completed / total) * 100);
+                    
+                    return `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-5 py-3 font-bold text-gray-800">${m}</td>
+                            <td class="px-5 py-3 text-center font-medium">${total}</td>
+                            <td class="px-5 py-3 text-center font-bold text-emerald-600">${completed}</td>
+                            <td class="px-5 py-3 text-center font-bold ${overdue > 0 ? 'text-red-600' : 'text-gray-400'}">${overdue}</td>
+                            <td class="px-5 py-3 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <span class="font-bold ${kpi >= 80 ? 'text-green-600' : kpi >= 50 ? 'text-yellow-600' : 'text-red-600'}">${kpi}%</span>
+                                    <div class="w-16 bg-gray-200 rounded-full h-1.5 hidden md:block"><div class="h-1.5 rounded-full ${kpi >= 80 ? 'bg-green-500' : kpi >= 50 ? 'bg-yellow-500' : 'bg-red-500'}" style="width: ${kpi}%"></div></div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // Update Chart Cơ sở
+            if(window.myChart) {
+                const typeCounts = {};
+                window.allFacilities.forEach(f => {
+                    const t = f.facilityType || 'Chưa phân loại';
+                    typeCounts[t] = (typeCounts[t] || 0) + 1;
+                });
+                window.myChart.data.labels = Object.keys(typeCounts);
+                window.myChart.data.datasets[0].data = Object.values(typeCounts);
+                window.myChart.data.datasets[0].backgroundColor = ['#ef4444', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#6366f1', '#14b8a6', '#f43f5e', '#64748b'];
+                window.myChart.update();
+            }
+
+            const uniqueTypes = [...new Set(window.allFacilities.map(f => f.facilityType).filter(Boolean))];
+            const dataListHtml = uniqueTypes.map(t => `<option value="${t}">`).join('');
+            const datalistEl = document.getElementById('fac-type-list');
+            if(datalistEl) datalistEl.innerHTML = dataListHtml;
+        }
+
+        /* --- XỬ LÝ SUBTASKS (CÁC BƯỚC THỰC HIỆN CHI TIẾT) --- */
+        window.addSubtask = async function(col, id) {
+            if(!window.currentUser) return;
+            const input = document.getElementById(`new-subtask-${col}-${id}`);
+            const text = input.value.trim();
+            if(!text) return;
+            
+            const dataArr = col === 'tasks' ? window.allTasks : window.allProjects;
+            const item = dataArr.find(x => x.id === id);
+            if(!item) return;
+
+            const newSubtasks = [...(item.subtasks || [])];
+            newSubtasks.push({ id: Date.now(), text: text, isCompleted: false, assignee: item.assignee || 'Đ/c Dũng' });
+
+            const updates = { subtasks: newSubtasks };
+            if (col === 'projects') {
+                updates.progress = newSubtasks.length > 0 ? Math.round((newSubtasks.filter(st => st.isCompleted).length / newSubtasks.length) * 100) : (item.progress || 0);
+            }
+
+            await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', col, id), updates);
+            syncToGoogleSheets('UPDATE', col, id, { ...item, ...updates });
+            input.value = ''; 
+        };
+
+        window.toggleSubtask = async function(col, id, idx) {
+            if(!window.currentUser) return;
+            const dataArr = col === 'tasks' ? window.allTasks : window.allProjects;
+            const item = dataArr.find(x => x.id === id);
+            if(!item || !item.subtasks) return;
+
+            const newSubtasks = [...item.subtasks];
+            newSubtasks[idx].isCompleted = !newSubtasks[idx].isCompleted;
+
+            const updates = { subtasks: newSubtasks };
+            if (col === 'projects') {
+                updates.progress = newSubtasks.length > 0 ? Math.round((newSubtasks.filter(st => st.isCompleted).length / newSubtasks.length) * 100) : (item.progress || 0);
+            }
+
+            await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', col, id), updates);
+            syncToGoogleSheets('UPDATE', col, id, { ...item, ...updates });
+        };
+
+        window.deleteSubtask = async function(col, id, idx) {
+            if(!window.currentUser) return;
+            if(!confirm("Xóa bước thực hiện này?")) return;
+            const dataArr = col === 'tasks' ? window.allTasks : window.allProjects;
+            const item = dataArr.find(x => x.id === id);
+            if(!item || !item.subtasks) return;
+
+            const newSubtasks = [...item.subtasks];
+            newSubtasks.splice(idx, 1);
+
+            const updates = { subtasks: newSubtasks };
+            if (col === 'projects') {
+                updates.progress = newSubtasks.length > 0 ? Math.round((newSubtasks.filter(st => st.isCompleted).length / newSubtasks.length) * 100) : (item.progress || 0);
+            }
+
+            await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', col, id), updates);
+            syncToGoogleSheets('UPDATE', col, id, { ...item, ...updates });
+        };
+
+        /* --- QUẢN LÝ CƠ SỞ --- */
+        window.openFacilityModal = function(id = null) {
+            const form = document.getElementById('form-facility'); form.reset();
+            document.querySelectorAll('.f-insp-cb').forEach(cb => cb.checked = false);
+            
+            if(id) {
+                document.getElementById('modal-fac-title').innerText = "Cập Nhật Chi Tiết"; document.getElementById('btn-submit-fac').innerText = "CẬP NHẬT THÔNG TIN";
+                const f = window.allFacilities.find(x => x.id === id);
+                if(f) {
+                    document.getElementById('f-id').value = f.id; document.getElementById('f-name').value = f.name || ''; 
+                    document.getElementById('f-fac-type').value = f.facilityType || ''; document.getElementById('f-record-num').value = f.recordNum || '';
+                    document.getElementById('f-plan-num').value = f.planNum || '';
+                    document.getElementById('f-open-date').value = f.openDate || ''; document.getElementById('f-village').value = f.village || '';
+                    document.getElementById('f-manager').value = f.manager || 'Chưa phân công'; document.getElementById('f-pc08-builder').value = f.pc08Builder || '';
+                    document.getElementById('f-pc08-date').value = f.pc08Date || ''; document.getElementById('f-trained-2026').value = f.trained2026 || '';
+                    document.getElementById('f-inspected-2026').value = f.inspected2026 || ''; document.getElementById('f-constructor').value = f.constructor || ''; document.getElementById('f-notes').value = f.notes || '';
+                    
+                    if(f.inspector) {
+                        const parts = f.inspector.split(',').map(s => s.trim()); let otherArr = []; const cbs = Array.from(document.querySelectorAll('.f-insp-cb'));
+                        parts.forEach(p => { const cb = cbs.find(c => c.value === p); if(cb) cb.checked = true; else if(p) otherArr.push(p); });
+                        document.getElementById('f-inspector-other').value = otherArr.join(', ');
+                    }
+                }
+            } else { document.getElementById('modal-fac-title').innerText = "Hồ Sơ Cơ Sở Mới"; document.getElementById('btn-submit-fac').innerText = "LƯU CƠ SỞ"; document.getElementById('f-id').value = ""; }
+            openModal('modal-facility');
+        };
+
+        function getFacilityChanges(oldObj, newObj) {
+            const labels = { name: 'Tên', facilityType: 'Loại hình', recordNum: 'Số HS', planNum: 'Số PA', openDate: 'Ngày mở', village: 'Thôn', manager: 'CB Quản lý', pc08Builder: 'Lập PC08', pc08Date: 'Ký PC08', trained2026: 'Ngày HL', inspected2026: 'Ngày KT', inspector: 'Đoàn KT', constructor: 'Thi công', notes: 'Ghi chú' };
+            let changes = [];
+            for (let k in labels) { if ((oldObj[k]||'') !== (newObj[k]||'')) changes.push(`${labels[k]}: "${oldObj[k]||'(trống)'}" ➝ "${newObj[k]||'(trống)'}"`); }
+            return changes;
+        }
+
+        window.submitFacility = async function(e) {
+            e.preventDefault(); if(!window.currentUser) return;
+            const btn = document.getElementById('btn-submit-fac'); btn.innerText = "Đang lưu...";
+            
+            let insps = Array.from(document.querySelectorAll('.f-insp-cb')).filter(cb => cb.checked).map(cb => cb.value);
+            const otherInsp = document.getElementById('f-inspector-other').value.trim(); if(otherInsp) insps.push(otherInsp);
+            const finalInspector = insps.join(', ');
+
+            const payload = {
+                name: document.getElementById('f-name').value, facilityType: document.getElementById('f-fac-type').value, 
+                recordNum: document.getElementById('f-record-num').value, planNum: document.getElementById('f-plan-num').value,
+                openDate: document.getElementById('f-open-date').value, village: document.getElementById('f-village').value,
+                manager: document.getElementById('f-manager').value, pc08Builder: document.getElementById('f-pc08-builder').value,
+                pc08Date: document.getElementById('f-pc08-date').value, trained2026: document.getElementById('f-trained-2026').value,
+                inspected2026: document.getElementById('f-inspected-2026').value, inspector: finalInspector,
+                constructor: document.getElementById('f-constructor').value, notes: document.getElementById('f-notes').value
+            };
+
+            const id = document.getElementById('f-id').value;
+            try {
+                if(id) {
+                    const oldData = window.allFacilities.find(x => x.id === id); const changes = getFacilityChanges(oldData, payload);
+                    if(changes.length > 0) {
+                        payload.history = [...(oldData.history || [])]; payload.history.unshift({ time: Date.now(), details: changes });
+                        await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'facilities', id), payload); 
+                        showToast("Đã cập nhật!");
+                        syncToGoogleSheets('UPDATE', 'facilities', id, payload);
+                    } else showToast("Không có thay đổi nào");
+                } else {
+                    payload.createdAt = Date.now(); 
+                    const docRef = await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'facilities'), payload); 
+                    showToast("Đã thêm mới!");
+                    syncToGoogleSheets('ADD', 'facilities', docRef.id, payload);
+                }
+                hideModal('modal-facility');
+            } catch(e) { alert(e); } finally { btn.innerText = "LƯU"; }
+        };
+
+        window.updateFacilityInline = async function(id, field, value) {
+            if(!window.currentUser) return;
+            const fac = window.allFacilities.find(f => f.id === id);
+            if(!fac || (fac[field] || '') == value) return;
+
+            const payload = {};
+            payload[field] = value;
+
+            const labels = { name: 'Tên', facilityType: 'Loại hình', recordNum: 'Số HS', planNum: 'Số PA', openDate: 'Ngày mở', village: 'Thôn', manager: 'CB Quản lý', pc08Builder: 'Lập PC08', pc08Date: 'Ký PC08', trained2026: 'Ngày HL', inspected2026: 'Ngày KT' };
+            const changes = [`${labels[field] || field}: "${fac[field]||'(trống)'}" ➝ "${value||'(trống)'}"`];
+            
+            payload.history = [...(fac.history || [])];
+            payload.history.unshift({ time: Date.now(), details: ["(Sửa nhanh) " + changes[0]] });
+
+            try {
+                await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'facilities', id), payload);
+                showToast("Đã lưu: " + (labels[field] || field));
+                const fullUpdatedObj = { ...fac, [field]: value };
+                syncToGoogleSheets('UPDATE', 'facilities', id, fullUpdatedObj);
+            } catch(e) { alert(e); }
+        };
+
+        window.showHistory = function(id) {
+            const f = window.allFacilities.find(x => x.id === id); const list = document.getElementById('history-list');
+            if(!f || !f.history || f.history.length === 0) list.innerHTML = `<p class="text-gray-500 text-center py-6 text-sm md:text-base font-bold">Chưa có lịch sử cập nhật nào.</p>`;
+            else {
+                list.innerHTML = f.history.map(h => `
+                    <div class="border-l-4 border-blue-500 pl-4 py-2 relative bg-gray-50 rounded-r-lg mb-3 shadow-sm">
+                        <div class="absolute w-3 h-3 bg-blue-600 rounded-full -left-[8px] top-3 border-2 border-white"></div>
+                        <p class="text-sm md:text-base text-gray-800 font-bold mb-1">${new Date(h.time).toLocaleString('vi-VN')}</p>
+                        <ul class="list-disc pl-5 text-xs md:text-sm text-gray-700 font-medium space-y-1">${h.details.map(d => `<li>${d}</li>`).join('')}</ul>
+                    </div>`).join('');
+            }
+            openModal('modal-history');
+        };
+
+        window.renderFacilities = function() {
+            const term = document.getElementById('search-facility').value.toLowerCase();
+            const sortMode = document.getElementById('sort-facility').value;
+            const filterStatus = document.getElementById('filter-status-facility').value;
+            const tbody = document.getElementById('facilities-table-body');
+            
+            let data = [...window.allFacilities];
+            
+            if (filterStatus !== 'all') {
+                data = data.filter(f => {
+                    if (filterStatus === 'thieu-hs') return !f.recordNum || f.recordNum.trim() === '';
+                    if (filterStatus === 'co-hs') return f.recordNum && f.recordNum.trim() !== '';
+                    if (filterStatus === 'thieu-pa') return !f.planNum || f.planNum.trim() === '';
+                    if (filterStatus === 'co-pa') return f.planNum && f.planNum.trim() !== '';
+                    if (filterStatus === 'thieu-cbql') return !f.manager || f.manager === 'Chưa phân công';
+                    if (filterStatus === 'co-cbql') return f.manager && f.manager !== 'Chưa phân công';
+                    if (filterStatus === 'thieu-nguoi-lap') return !f.pc08Builder || f.pc08Builder.trim() === '';
+                    if (filterStatus === 'co-nguoi-lap') return f.pc08Builder && f.pc08Builder.trim() !== '';
+                    if (filterStatus === 'thieu-ngay-ky') return !f.pc08Date || f.pc08Date.trim() === '';
+                    if (filterStatus === 'co-ngay-ky') return f.pc08Date && f.pc08Date.trim() !== '';
+                    if (filterStatus === 'thieu-hl') return !f.trained2026 || f.trained2026.trim() === '';
+                    if (filterStatus === 'co-hl') return f.trained2026 && f.trained2026.trim() !== '';
+                    if (filterStatus === 'thieu-kt') return !f.inspected2026 || f.inspected2026.trim() === '';
+                    if (filterStatus === 'co-kt') return f.inspected2026 && f.inspected2026.trim() !== '';
+                    return true;
+                });
+            }
+
+            data.sort((a, b) => {
+                if(sortMode === 'date-desc') return (b.openDate ? new Date(b.openDate).getTime() : 0) - (a.openDate ? new Date(a.openDate).getTime() : 0);
+                if(sortMode === 'date-asc') return (a.openDate ? new Date(a.openDate).getTime() : Infinity) - (b.openDate ? new Date(b.openDate).getTime() : Infinity);
+                if(sortMode === 'name-asc') return (a.name||'').localeCompare(b.name||'');
+                if(sortMode === 'name-desc') return (b.name||'').localeCompare(a.name||'');
+                if(sortMode === 'type-asc') return (a.facilityType||'').localeCompare(b.facilityType||'');
+                return 0;
+            });
+
+            if(term) data = data.filter(f => (f.name||'').toLowerCase().includes(term) || (f.recordNum||'').toLowerCase().includes(term) || (f.planNum||'').toLowerCase().includes(term) || (f.facilityType||'').toLowerCase().includes(term));
+
+            if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 text-sm md:text-base font-bold">Không tìm thấy cơ sở nào khớp với bộ lọc.</td></tr>`; return; }
+
+            const managerOptions = ['Chưa phân công', 'Đ/c Dũng', 'Đ/c Thiêm', 'Đ/c Trung', 'Đ/c Hải', 'Tổ trưởng'];
+
+            const makeInput = (val, field, id, cls, placeholder="") => `<input type="text" value="${val||''}" onchange="updateFacilityInline('${id}', '${field}', this.value)" class="inline-edit ${cls}" placeholder="${placeholder}">`;
+            const makeDate = (val, field, id, cls) => `<input type="date" value="${val||''}" onchange="updateFacilityInline('${id}', '${field}', this.value)" class="inline-edit ${cls}">`;
+            const makeSelect = (val, field, id, options, cls) => {
+                const opts = options.map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('');
+                return `<select onchange="updateFacilityInline('${id}', '${field}', this.value)" class="inline-edit ${cls}">${opts}</select>`;
+            };
+
+            tbody.innerHTML = data.map((f, index) => {
+                const isHL = !!f.trained2026; const isKT = !!f.inspected2026;
+                
+                const statusHtml = `<div class="text-xs md:text-sm space-y-1 md:space-y-2">
+                    <div class="flex items-center gap-1 font-bold ${isHL ? 'text-green-600' : 'text-red-500'}">HL: ${makeDate(f.trained2026, 'trained2026', f.id, isHL?'text-green-600':'text-red-500')}</div>
+                    <div class="flex items-center gap-1 font-bold ${isKT ? 'text-green-600' : 'text-red-500'}">KT: ${makeDate(f.inspected2026, 'inspected2026', f.id, isKT?'text-green-600':'text-red-500')}</div>
+                    <div class="text-gray-600 truncate w-32 md:w-48 font-medium" title="${f.inspector||''}">Đoàn: ${f.inspector||'---'}</div>
+                </div>`;
+
+                return `
+                <tr class="hover:bg-red-50 transition border-b border-gray-100 group">
+                    <td class="px-2 py-3 md:px-4 md:py-4 align-top text-center font-bold text-gray-500 text-sm md:text-base">${index + 1}</td>
+                    
+                    <td class="px-3 py-3 md:px-4 md:py-4 align-top">
+                        ${makeInput(f.name, 'name', f.id, 'text-sm md:text-base font-bold text-gray-900 mb-1', 'Tên cơ sở...')}
+                        <div class="flex items-center text-xs md:text-sm text-gray-600 font-bold mb-0.5 md:mb-1"><i class="fa-solid fa-tag text-blue-500 w-4 md:w-5"></i> ${makeInput(f.facilityType, 'facilityType', f.id, 'font-bold text-gray-600', 'Loại hình...')}</div>
+                        <div class="flex items-center text-xs md:text-sm text-gray-500 font-medium"><i class="fa-solid fa-location-dot text-red-500 w-4 md:w-5"></i> ${makeInput(f.village, 'village', f.id, 'font-medium', 'Thôn/Xóm...')}</div>
+                        ${f.notes ? `<div class="text-xs text-yellow-700 mt-2 bg-yellow-50 p-1.5 rounded border border-yellow-200 line-clamp-2 font-medium" title="${f.notes}">${f.notes}</div>` : ''}
+                    </td>
+                    
+                    <td class="px-3 py-3 md:px-4 md:py-4 align-top whitespace-nowrap">
+                        <div class="flex items-center text-sm md:text-base text-gray-900 font-bold mb-1 md:mb-2"><i class="fa-solid fa-user-tie text-blue-500 w-4 md:w-5"></i> ${makeSelect(f.manager, 'manager', f.id, managerOptions, 'font-bold text-gray-900')}</div>
+                        <div class="flex items-center text-sm md:text-base text-blue-700 font-bold mb-0.5 md:mb-1">HS: ${makeInput(f.recordNum, 'recordNum', f.id, 'font-bold text-blue-700', 'Số HS...')}</div>
+                        <div class="flex items-center text-xs md:text-sm text-gray-600 font-medium">Mở: ${makeDate(f.openDate, 'openDate', f.id, 'text-gray-600')}</div>
+                    </td>
+                    
+                    <td class="px-3 py-3 md:px-4 md:py-4 align-top whitespace-nowrap">
+                        <div class="flex items-center text-sm md:text-base text-green-700 font-bold mb-1 md:mb-2">PA: ${makeInput(f.planNum, 'planNum', f.id, 'font-bold text-green-700', 'Số PA...')}</div>
+                        <div class="flex items-center text-xs md:text-sm text-gray-600 font-medium mb-0.5 md:mb-1">Lập: ${makeInput(f.pc08Builder, 'pc08Builder', f.id, 'font-medium', 'Người lập...')}</div>
+                        <div class="flex items-center text-xs md:text-sm text-gray-600 font-medium">Ký: ${makeDate(f.pc08Date, 'pc08Date', f.id, 'text-gray-600')}</div>
+                    </td>
+                    
+                    <td class="px-3 py-3 md:px-4 md:py-4 align-top whitespace-nowrap">${statusHtml}</td>
+                    <td class="px-3 py-3 md:px-4 md:py-4 align-top whitespace-nowrap text-right">
+                        <div class="flex flex-col gap-2 items-end">
+                            <button type="button" onclick="openFacilityModal('${f.id}')" class="text-blue-700 hover:text-white bg-blue-50 hover:bg-blue-600 px-2 py-1 md:px-3 md:py-1.5 rounded text-xs md:text-sm font-bold w-20 md:w-24 text-center border border-blue-100 transition"><i class="fa-solid fa-bars-staggered"></i> Chi tiết</button>
+                            <button type="button" onclick="showHistory('${f.id}')" class="text-gray-700 hover:text-white bg-gray-100 hover:bg-gray-600 px-2 py-1 md:px-3 md:py-1.5 rounded text-xs md:text-sm font-bold w-20 md:w-24 text-center border border-gray-200 transition"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử</button>
+                            <button type="button" onclick="deleteDocItem('facilities', '${f.id}')" class="text-red-600 hover:text-white bg-red-50 hover:bg-red-600 px-2 py-1 md:px-3 md:py-1.5 rounded text-xs md:text-sm font-bold w-20 md:w-24 text-center border border-red-100 transition opacity-100 md:opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash"></i> Xóa</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        };
+
+        /* --- QUẢN LÝ NHIỆM VỤ (DẠNG DANH SÁCH + TIẾN ĐỘ) --- */
+        window.openTaskModal = function(id = null) {
+            const form = document.getElementById('form-task'); form.reset();
+            if(id) {
+                document.getElementById('modal-task-title').innerText = "Cập Nhật Công Việc";
+                document.getElementById('btn-submit-task').innerText = "CẬP NHẬT";
+                const t = window.allTasks.find(x => x.id === id);
+                if(t) {
+                    if(document.getElementById('t-id')) document.getElementById('t-id').value = t.id;
+                    document.getElementById('t-title').value = t.title;
+                    document.getElementById('t-assignee').value = t.assignee || 'Đ/c Dũng';
+                    document.getElementById('t-deadline').value = t.deadline || '';
+                }
+            } else {
+                document.getElementById('modal-task-title').innerText = "Giao Việc Mới";
+                document.getElementById('btn-submit-task').innerText = "GIAO VIỆC";
+                if(document.getElementById('t-id')) document.getElementById('t-id').value = "";
+            }
+            openModal('modal-task');
+        };
+
+        window.submitTask = async function(e) {
+            e.preventDefault(); if(!window.currentUser) return;
+            const btn = document.getElementById('btn-submit-task') || e.target.querySelector('button'); btn.innerText = "Đang lưu...";
+            
+            const payload = {
+                title: document.getElementById('t-title').value,
+                assignee: document.getElementById('t-assignee').value,
+                deadline: document.getElementById('t-deadline').value
+            };
+            const id = document.getElementById('t-id') ? document.getElementById('t-id').value : null;
+            
+            try {
+                if (id) {
+                    const oldData = window.allTasks.find(x => x.id === id);
+                    payload.isCompleted = oldData ? oldData.isCompleted : false;
+                    payload.subtasks = oldData && oldData.subtasks ? oldData.subtasks : [];
+                    payload.createdAt = oldData && oldData.createdAt ? oldData.createdAt : Date.now();
+                    await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'tasks', id), payload);
+                    showToast("Đã cập nhật công việc!");
+                    syncToGoogleSheets('UPDATE', 'tasks', id, payload);
+                } else {
+                    payload.isCompleted = false;
+                    payload.subtasks = [];
+                    payload.createdAt = Date.now();
+                    const docRef = await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'tasks'), payload);
+                    showToast("Đã giao việc!");
+                    syncToGoogleSheets('ADD', 'tasks', docRef.id, payload);
+                }
+                e.target.reset(); hideModal('modal-task');
+            } catch (err) { alert("Lỗi: " + err.message); }
+            finally { btn.innerText = id ? "CẬP NHẬT" : "GIAO VIỆC"; }
+        }
+
+        window.toggleTask = async function(id, currentStatus) {
+            if(!window.currentUser) return;
+            await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'tasks', id), { isCompleted: !currentStatus });
+            const item = window.allTasks.find(x => x.id === id);
+            syncToGoogleSheets('UPDATE', 'tasks', id, { ...item, isCompleted: !currentStatus });
+        }
+
+        window.renderTasks = function() {
+            const list = document.getElementById('tasks-list'); const data = window.allTasks.sort((a,b) => a.isCompleted - b.isCompleted || b.createdAt - a.createdAt);
+            if(data.length === 0) { list.innerHTML = `<div class="text-center text-gray-500 py-8 text-sm md:text-base font-bold">Không có việc tồn đọng!</div>`; return; }
+            list.innerHTML = data.map(t => {
+                const isOverdue = !t.isCompleted && t.deadline && new Date(t.deadline + 'T23:59:59') < new Date();
+                const phone = ZALO_PHONES[t.assignee] || "";
+                const msg = `🚨 *NHIỆM VỤ PCCC BÌNH TUYỀN*\n\n📌 Công việc: ${t.title}\n👤 Giao cho: ${t.assignee}\n⏰ Hạn chót: ${t.deadline ? new Date(t.deadline).toLocaleDateString('vi-VN') : 'Không có'}\n\n👉 Đồng chí vui lòng phản hồi và báo cáo tiến độ nhé!`;
+                const msgEncoded = encodeURIComponent(msg);
+
+                const deadlineHtml = t.deadline ? `<div class="text-[11px] md:text-xs ${isOverdue ? 'text-red-600 font-bold' : 'text-gray-600 font-medium'} mt-1.5"><i class="fa-regular fa-clock"></i> KPI Hạn: ${new Date(t.deadline).toLocaleDateString('vi-VN')}</div>` : '';
+                
+                const subtasksArr = t.subtasks || [];
+                const subtasksHtml = subtasksArr.length > 0 ? `
+                    <div class="mt-3 pt-3 border-t border-gray-100">
+                        <div class="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-2">Các bước chi tiết:</div>
+                        <div class="space-y-2">
+                            ${subtasksArr.map((st, idx) => `
+                                <div class="flex items-start gap-2 text-sm">
+                                    <input type="checkbox" ${st.isCompleted ? 'checked' : ''} onchange="toggleSubtask('tasks', '${t.id}', ${idx})" class="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer task-checkbox">
+                                    <div class="flex-1 ${st.isCompleted ? 'line-through text-gray-400' : 'text-gray-700'}">${st.text}</div>
+                                    <i class="fa-solid fa-xmark text-gray-300 hover:text-red-500 cursor-pointer py-1" onclick="deleteSubtask('tasks', '${t.id}', ${idx})"></i>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>` : '';
+
+                return `
+                <div class="p-4 md:p-5 border ${t.isCompleted ? 'border-gray-200 bg-gray-50 opacity-70' : 'border-blue-200 bg-white border-l-4 border-l-blue-500'} rounded-lg transition shadow-sm mb-3">
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox" ${t.isCompleted ? 'checked' : ''} onchange="toggleTask('${t.id}', ${t.isCompleted})" class="w-5 h-5 md:w-6 md:h-6 mt-0.5 rounded text-blue-600 focus:ring-blue-500 cursor-pointer">
+                        <div class="flex-1">
+                            <h3 class="text-base md:text-lg ${t.isCompleted ? 'line-through text-gray-500' : 'font-bold text-gray-900'}">${t.title}</h3>
+                            ${deadlineHtml}
+                            <div class="flex items-center justify-between mt-3">
+                                <span class="bg-gray-100 border border-gray-200 text-gray-800 text-xs md:text-sm font-bold px-2 py-1 md:px-3 md:py-1.5 rounded shadow-sm">Giao: <span class="text-blue-700">${t.assignee}</span></span>
+                                <div class="flex gap-1.5">
+                                    <button onclick="navigator.clipboard.writeText(decodeURIComponent('${msgEncoded}')).then(() => { showToast('Đã chép nội dung! Đang kết nối Zalo...'); window.open('zalo://share?text=${msgEncoded}', '_self'); setTimeout(() => window.open('https://zalo.me/${phone}', '_blank'), 500); }).catch(()=>window.open('zalo://share?text=${msgEncoded}', '_self'));" class="text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-2 py-1.5 rounded text-xs md:text-sm font-bold border border-blue-100 transition"><i class="fa-solid fa-comment-sms"></i> Zalo</button>
+                                    <button onclick="openTaskModal('${t.id}')" class="text-indigo-600 hover:text-white bg-indigo-50 hover:bg-indigo-600 px-2 py-1.5 rounded text-xs md:text-sm font-bold border border-indigo-100 transition"><i class="fa-solid fa-pen"></i> Sửa</button>
+                                    <button onclick="deleteDocItem('tasks', '${t.id}')" class="text-red-500 hover:text-white bg-red-50 hover:bg-red-600 px-2 py-1.5 rounded text-xs md:text-sm font-bold border border-red-100 transition"><i class="fa-solid fa-trash"></i> Xóa</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    ${subtasksHtml}
+                    <div class="mt-4 flex gap-2">
+                        <input type="text" id="new-subtask-tasks-${t.id}" placeholder="Thêm bước làm cụ thể (Ví dụ: Rà soát 20 hồ sơ - Nhấn Enter)" class="text-sm md:text-base p-2.5 border border-gray-300 rounded-md flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm" onkeypress="if(event.key === 'Enter') addSubtask('tasks', '${t.id}')">
+                        <button onclick="addSubtask('tasks', '${t.id}')" class="bg-blue-100 text-blue-700 px-4 rounded-md hover:bg-blue-200 text-sm font-bold shadow-sm"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        /* --- QUẢN LÝ DỰ ÁN THI CÔNG (DẠNG DANH SÁCH + TIẾN ĐỘ) --- */
+        window.openProjectModal = function(id = null) {
+            const form = document.getElementById('form-project'); form.reset();
+            if(id) {
+                document.getElementById('modal-proj-title').innerText = "Cập Nhật Dự Án"; document.getElementById('btn-submit-proj').innerText = "CẬP NHẬT THÔNG TIN";
+                const p = window.allProjects.find(x => x.id === id);
+                if(p) {
+                    document.getElementById('p-id').value = p.id; 
+                    document.getElementById('p-name').value = p.name || ''; 
+                    document.getElementById('p-client').value = p.client || '';
+                    document.getElementById('p-assignee').value = p.assignee || 'Đ/c Dũng'; 
+                    document.getElementById('p-value').value = p.value || ''; 
+                    document.getElementById('p-cost').value = p.cost || ''; 
+                    document.getElementById('p-progress').value = p.progress || 0;
+                    document.getElementById('p-status').value = p.status || 'Khảo sát'; 
+                    document.getElementById('p-deadline').value = p.deadline || '';
+                }
+            } else { 
+                document.getElementById('modal-proj-title').innerText = "Dự Án Mới"; 
+                document.getElementById('btn-submit-proj').innerText = "LƯU DỰ ÁN"; 
+                document.getElementById('p-id').value = ""; 
+            }
+            openModal('modal-project');
+        };
+
+        window.submitProject = async function(e) {
+            e.preventDefault(); if(!window.currentUser) return;
+            const btn = document.getElementById('btn-submit-proj'); btn.innerText = "Đang lưu...";
+            const payload = {
+                name: document.getElementById('p-name').value, client: document.getElementById('p-client').value, assignee: document.getElementById('p-assignee').value,
+                value: parseInt(document.getElementById('p-value').value) || 0, cost: parseInt(document.getElementById('p-cost').value) || 0,
+                progress: parseInt(document.getElementById('p-progress').value) || 0, status: document.getElementById('p-status').value, deadline: document.getElementById('p-deadline').value
+            };
+            const id = document.getElementById('p-id').value;
+            try {
+                if(id) { 
+                    const oldData = window.allProjects.find(x => x.id === id);
+                    payload.subtasks = oldData && oldData.subtasks ? oldData.subtasks : [];
+                    await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'projects', id), payload); 
+                    showToast("Đã cập nhật dự án!"); syncToGoogleSheets('UPDATE', 'projects', id, payload);
+                } else { 
+                    payload.subtasks = [];
+                    payload.profitTransferred = false; payload.createdAt = Date.now(); 
+                    const docRef = await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'projects'), payload); 
+                    showToast("Đã thêm dự án!"); syncToGoogleSheets('ADD', 'projects', docRef.id, payload);
+                }
+                hideModal('modal-project');
+            } catch(e) { alert(e); } finally { btn.innerText = "LƯU DỰ ÁN"; }
+        };
+
+        window.submitProfit = async function(e) {
+            e.preventDefault(); if(!window.currentUser) return;
+            const id = document.getElementById('pr-id').value; const amount = parseInt(document.getElementById('pr-amount').value);
+            const name = document.getElementById('pr-name').value; const dest = document.querySelector('input[name="pr-dest"]:checked').value;
+            const note = document.getElementById('pr-note').value;
+            
+            try {
+                if(dest === 'quy_to') {
+                    const fundPayload = { type: 'thu', amount: amount, desc: `Lợi nhuận thi công: ${name}`, createdAt: Date.now() };
+                    const fundRef = await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'funds'), fundPayload);
+                    syncToGoogleSheets('ADD', 'funds', fundRef.id, fundPayload);
+
+                    await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'projects', id), { profitTransferred: true, profitDestination: 'Quỹ Tổ' });
+                    syncToGoogleSheets('UPDATE', 'projects', id, { profitTransferred: true, profitDestination: 'Quỹ Tổ' });
+                    showToast("Đã cộng tiền vào Quỹ Tổ!");
+                } else {
+                    await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'projects', id), { profitTransferred: true, profitDestination: note || 'Mục đích khác' });
+                    syncToGoogleSheets('UPDATE', 'projects', id, { profitTransferred: true, profitDestination: note || 'Mục đích khác' });
+                    showToast("Đã cập nhật tình trạng xử lý lợi nhuận!");
+                }
+                hideModal('modal-profit');
+            } catch(e) { alert(e); }
+        };
+
+        window.renderProjects = function() {
+            const list = document.getElementById('projects-list');
+            if(window.allProjects.length === 0) { list.innerHTML = `<div class="col-span-full text-center text-gray-500 py-10 border-2 border-dashed border-gray-300 rounded-lg text-sm md:text-base font-bold">Chưa có dự án nào. Bấm Thêm Dự Án để bắt đầu.</div>`; return; }
+            
+            list.className = "flex flex-col gap-4 md:gap-6";
+            
+            list.innerHTML = window.allProjects.sort((a,b) => b.createdAt - a.createdAt).map(p => {
+                let badgeClass = "bg-gray-100 text-gray-700 border-gray-200";
+                if(p.status === 'Thi công') badgeClass = "bg-indigo-100 text-indigo-700 border-indigo-200";
+                if(p.status === 'Nghiệm thu') badgeClass = "bg-green-100 text-green-700 border-green-200";
+                
+                const profit = (p.value || 0) - (p.cost || 0);
+                let profitHtml = '';
+                if(p.status === 'N nghiệm thu' || p.status === 'Nghiệm thu') {
+                    if(!p.profitTransferred) {
+                        profitHtml = `<div class="mt-4 p-3 bg-green-50 rounded-lg border border-green-200 text-center"><p class="text-xs font-bold text-gray-500 uppercase mb-1">Lợi Nhuận Thực Tế</p><p class="text-lg md:text-xl font-bold text-green-600 mb-2">${formatMoney(profit)}</p><button onclick="openProfitModal('${p.id}', '${p.name.replace(/'/g, "\\'")}', ${profit})" class="w-full bg-green-500 text-white text-xs md:text-sm font-bold py-2 rounded shadow hover:bg-green-600 animate-pulse uppercase">Xử Lý Lợi Nhuận</button></div>`;
+                    } else {
+                        profitHtml = `<div class="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200 text-center"><p class="text-xs font-bold text-gray-500 uppercase mb-1">Lợi Nhuận Thực Tế</p><p class="text-lg md:text-xl font-bold text-green-600 mb-2">${formatMoney(profit)}</p><span class="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded border border-blue-200">Đã xử lý: ${p.profitDestination}</span></div>`;
+                    }
+                }
+                
+                const subtasksArr = p.subtasks || [];
+                const completedSubtasks = subtasksArr.filter(st => st.isCompleted).length;
+                const totalSubtasks = subtasksArr.length;
+                const actualProgress = totalSubtasks > 0 ? Math.round((completedSubtasks / totalSubtasks) * 100) : (p.progress || 0);
+
+                const subtasksHtml = subtasksArr.length > 0 ? `
+                    <div class="mt-3 pt-3 border-t border-gray-200">
+                        <div class="text-[10px] md:text-xs font-bold text-gray-500 uppercase mb-2">Các bước thi công chi tiết:</div>
+                        <div class="space-y-2">
+                            ${subtasksArr.map((st, idx) => `
+                                <div class="flex items-start gap-2 text-sm">
+                                    <input type="checkbox" ${st.isCompleted ? 'checked' : ''} onchange="toggleSubtask('projects', '${p.id}', ${idx})" class="mt-0.5 w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer task-checkbox">
+                                    <div class="flex-1 ${st.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 font-medium'}">${st.text}</div>
+                                    <i class="fa-solid fa-xmark text-gray-400 hover:text-red-500 cursor-pointer py-1" onclick="deleteSubtask('projects', '${p.id}', ${idx})"></i>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>` : '';
+
+                return `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 hover:shadow-md transition relative group">
+                    <div class="absolute top-4 right-4 flex gap-1.5 md:gap-2">
+                        <button onclick="openProjectModal('${p.id}')" class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition shadow-sm border border-indigo-100"><i class="fa-solid fa-pen text-sm"></i></button>
+                        <button onclick="deleteDocItem('projects', '${p.id}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition shadow-sm border border-red-100"><i class="fa-solid fa-trash text-sm"></i></button>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-xs font-bold px-2.5 py-1 rounded border ${badgeClass} inline-block">${p.status}</span>
+                    </div>
+                    <h3 class="text-lg md:text-xl font-bold text-gray-900 leading-tight mb-2 pr-20">${p.name}</h3>
+                    
+                    <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 mb-4">
+                        <div class="flex items-center text-sm md:text-base text-gray-600 font-medium"><i class="fa-solid fa-building text-gray-400 w-5"></i> CĐT: <span class="font-bold ml-1 text-gray-800">${p.client || 'Chưa rõ'}</span></div>
+                        <div class="flex items-center text-sm md:text-base text-gray-600 font-medium"><i class="fa-solid fa-user-gear text-indigo-400 w-5"></i> Giao: <span class="font-bold ml-1 text-indigo-700">${p.assignee || 'Chưa phân công'}</span></div>
+                        <div class="flex items-center text-sm md:text-base text-gray-600 font-medium"><i class="fa-regular fa-calendar text-red-400 w-5"></i> Hạn chót: <span class="font-bold ml-1 ${new Date(p.deadline) < new Date() && actualProgress < 100 ? 'text-red-600' : 'text-gray-800'}">${p.deadline ? new Date(p.deadline).toLocaleDateString('vi-VN') : 'Chưa định'}</span></div>
+                    </div>
+                    
+                    <div class="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <div class="flex justify-between text-sm md:text-base font-bold mb-2"><span class="text-gray-700">Tiến độ tổng thể</span><span class="${actualProgress === 100 ? 'text-green-600' : 'text-indigo-600'}">${actualProgress}%</span></div>
+                        <div class="w-full bg-gray-300 rounded-full h-3"><div class="h-3 rounded-full ${actualProgress === 100 ? 'bg-green-500' : 'bg-indigo-600'} transition-all duration-500" style="width: ${actualProgress}%"></div></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 border-t border-gray-200 pt-4 bg-gray-50/50 -mx-4 md:-mx-6 px-4 md:px-6 pb-2">
+                        <div><p class="text-[10px] md:text-xs text-gray-500 uppercase font-bold mb-1">Báo giá CĐT (Thu)</p><p class="text-base md:text-lg font-bold text-gray-900">${formatMoney(p.value)}</p></div>
+                        <div class="text-right"><p class="text-[10px] md:text-xs text-gray-500 uppercase font-bold mb-1">Giá cốt (Chi)</p><p class="text-base md:text-lg font-bold text-red-600">${formatMoney(p.cost)}</p></div>
+                    </div>
+                    
+                    ${subtasksHtml}
+                    <div class="mt-4 flex gap-2">
+                        <input type="text" id="new-subtask-projects-${p.id}" placeholder="Thêm bước thi công chi tiết (Nhấn Enter)" class="text-sm md:text-base p-2.5 border border-gray-300 rounded-md flex-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm" onkeypress="if(event.key === 'Enter') addSubtask('projects', '${p.id}')">
+                        <button onclick="addSubtask('projects', '${p.id}')" class="bg-indigo-100 text-indigo-700 px-4 rounded-md hover:bg-indigo-200 text-sm font-bold shadow-sm"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+
+                    ${profitHtml}
+                </div>`;
+            }).join('');
+        };
+
+        /* --- IMPORT/EXPORT CSV --- */
+        window.importCSV = function(event) {
+            const file = event.target.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                let rows = e.target.result.split(/\r?\n/).filter(r => r.trim() !== '' && !r.toLowerCase().startsWith('sep='));
+                if(rows.length < 2) return alert("File trống!");
+                const delimiter = rows[0].includes(';') ? ';' : ',';
+                function parseRow(str) {
+                    let result = [], cur = '', inQuote = false;
+                    for (let i = 0; i < str.length; i++) {
+                        let c = str[i];
+                        if (c === '"') { if (inQuote && str[i+1] === '"') { cur += '"'; i++; } else inQuote = !inQuote; } 
+                        else if (c === delimiter && !inQuote) { result.push(cur); cur = ''; } else cur += c;
+                    }
+                    result.push(cur); return result.map(s => s.trim() === 'undefined' ? '' : s.trim());
+                }
+
+                let parsedData = [];
+                for(let i=1; i<rows.length; i++) {
+                    const clean = parseRow(rows[i]);
+                    if(clean[0]) {
+                        parsedData.push({
+                            name: clean[0], facilityType: clean[1]||'', recordNum: clean[2]||'', planNum: clean[3]||'', openDate: clean[4]||'', village: clean[5]||'', manager: clean[6]||'', pc08Builder: clean[7]||'', pc08Date: clean[8]||'',
+                            trained2026: clean[9]||'', inspected2026: clean[10]||'', inspector: clean[11]||'', constructor: clean[12]||'', notes: clean[13]||''
+                        });
+                    }
+                }
+
+                let newItems = []; let duplicateItems = [];
+                parsedData.forEach(newFac => {
+                    if (!newFac.name) return;
+                    const isDup = window.allFacilities.find(oldFac => {
+                        const oldName = (oldFac.name || '').trim().toLowerCase();
+                        const newName = (newFac.name || '').trim().toLowerCase();
+                        const oldRecord = (oldFac.recordNum || '').trim().toLowerCase();
+                        const newRecord = (newFac.recordNum || '').trim().toLowerCase();
+                        return (oldName === newName && newName !== '') || (oldRecord === newRecord && newRecord !== '');
+                    });
+                    if(isDup) duplicateItems.push({ id: isDup.id, data: newFac });
+                    else newItems.push(newFac);
+                });
+
+                let updateDups = false;
+                if(duplicateItems.length > 0) {
+                    updateDups = confirm(`Phát hiện ${duplicateItems.length} cơ sở BỊ TRÙNG. Bấm "OK" để ghi đè hợp nhất, bấm "Hủy" để bỏ qua.`);
+                } else if(newItems.length === 0) {
+                    document.getElementById('file-upload-csv').value = '';
+                    return alert("Dữ liệu đã tồn tại hoàn toàn!");
+                }
+
+                document.getElementById('loading').style.display = 'flex';
+                let addedCount = 0; let updatedCount = 0;
+                
+                for(const item of newItems) {
+                    item.createdAt = Date.now();
+                    await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'facilities'), item);
+                    addedCount++;
+                }
+
+                if(updateDups) {
+                    for(const item of duplicateItems) {
+                        const oldData = window.allFacilities.find(x => x.id === item.id);
+                        let mergedData = { ...oldData };
+                        for(let key in item.data) { if(item.data[key] && item.data[key].trim() !== '') mergedData[key] = item.data[key]; }
+                        await window.updateDoc(window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'facilities', item.id), mergedData);
+                        updatedCount++;
+                    }
+                }
+
+                document.getElementById('loading').style.display = 'none'; 
+                showToast(`Nạp thành công! Thêm mới ${addedCount} mục.`); 
+                document.getElementById('file-upload-csv').value = '';
+                
+                if(addedCount > 0 || updatedCount > 0) {
+                    setTimeout(async () => { if(window.allFacilities.length > 0) await syncToGoogleSheets('FULL_SYNC', 'facilities', 'all', window.allFacilities); }, 1500); 
+                }
+            };
+            reader.readAsText(file);
+        };
+
+        window.downloadCSVTemplate = function() {
+            let csv = "Ten co so;Loai hinh;So ho so;So phuong an;Ngay mo(YYYY-MM-DD);Thon/Xom;Can bo QL;Nguoi lap PC08;Ngay ky PC08;Ngay HL(YYYY-MM-DD);Ngay KT(YYYY-MM-DD);Nguoi/Doan KT;Thi cong;Ghi chu\n";
+            csv += '"Nha nghi Phuong Nam";"Khach san";"123/PC08";"12/PA";"2026-01-15";"Thon 1";"D/c Dung";"D/c Thiem";"2026-02-20";"2026-03-10";"2026-05-12";"Doan kiem tra Tinh";"Cong ty PCCC A";"Ban nhap ngay thang dung chuan Nam-Thang-Ngay nhe"\n';
+            const bom = new Uint8Array([0xEF, 0xBB, 0xBF]); 
+            const blob = new Blob([bom, csv], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "Mau_Nhap_Khong_Dau_BinhTuyen.csv"; a.click(); URL.revokeObjectURL(url);
+        };
+
+        window.exportToCSV = function() {
+            if(window.allFacilities.length === 0) return alert("Trống!");
+            let csv = "Ten co so;Loai hinh;So ho so;So phuong an;Ngay mo;Thon/Xom;Can bo QL;Nguoi lap PC08;Ngay ky PC08;Ngay HL;Ngay KT;Nguoi KT;Thi cong;Ghi chu\n";
+            window.allFacilities.forEach(f => {
+                let cleanNotes = (f.notes || '').replace(/[\r\n]+/g, ' ');
+                let cleanName = (f.name || '').replace(/[\r\n]+/g, ' ');
+                csv += [cleanName, f.facilityType||'', f.recordNum||'', f.planNum||'', f.openDate||'', f.village||'', f.manager||'', f.pc08Builder||'', f.pc08Date||'', f.trained2026||'', f.inspected2026||'', f.inspector||'', f.constructor||'', cleanNotes]
+                    .map(v => `"${removeAccents(String(v)).replace(/"/g, '""')}"`).join(';') + "\n";
+            });
+            const bom = new Uint8Array([0xEF, 0xBB, 0xBF]); 
+            const blob = new Blob([bom, csv], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `Xuat_PCCC_${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(url);
+        };
+
+        /* --- QUẢN LÝ TÀI CHÍNH --- */
+        window.submitFund = async function(e) {
+            e.preventDefault(); 
+            if(!window.currentUser) return;
+            const btn = e.target.querySelector('button'); 
+            if(btn) btn.innerText = "Đang lưu...";
+            
+            const typeEl = document.querySelector('input[name="f-type"]:checked');
+            const type = typeEl ? typeEl.value : 'thu'; 
+            const amount = parseInt(document.getElementById('f-amount').value) || 0; 
+            const desc = document.getElementById('f-desc').value;
+            
+            const payload = { type, amount, desc, createdAt: Date.now() };
+            
+            try {
+                const docRef = await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'funds'), payload);
+                e.target.reset(); 
+                hideModal('modal-fund'); 
+                showToast("Đã lưu giao dịch!"); 
+                syncToGoogleSheets('ADD', 'funds', docRef.id, payload);
+            } catch (err) { 
+                alert("Lỗi: " + err.message); 
+            } finally {
+                if(btn) btn.innerText = "LƯU GIAO DỊCH";
+            }
+        }
+
+        window.renderFunds = function() {
+            const tbody = document.getElementById('funds-table-body'); 
+            const data = window.allFunds.sort((a,b) => b.createdAt - a.createdAt);
+            
+            let totalIn = 0, totalOut = 0; 
+            data.forEach(d => { 
+                const amt = Number(d.amount) || 0;
+                if(d.type === 'thu') totalIn += amt; 
+                else totalOut += amt; 
+            });
+            
+            document.getElementById('total-in').innerText = formatMoney(totalIn); 
+            document.getElementById('total-out').innerText = formatMoney(totalOut);
+            
+            const total = formatMoney(totalIn - totalOut); 
+            document.getElementById('total-fund-page').innerText = total; 
+            const dashF = document.getElementById('dash-total-fund'); 
+            if(dashF) dashF.innerText = total;
+            
+            if(data.length === 0) { 
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-8 text-gray-500 text-sm md:text-base font-bold">Chưa có giao dịch.</td></tr>`; 
+                return; 
+            }
+            tbody.innerHTML = data.map(f => `
+                <tr class="hover:bg-gray-50">
+                    <td class="py-3 px-4 text-gray-600 whitespace-nowrap text-xs md:text-sm font-bold">${new Date(f.createdAt).toLocaleDateString('vi-VN')}</td>
+                    <td class="py-3 px-4 font-bold text-gray-900 text-sm md:text-base">${f.desc} <button type="button" onclick="deleteDocItem('funds', '${f.id}')" class="ml-2 text-red-500 hover:text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-100 transition"><i class="fa-solid fa-xmark"></i></button></td>
+                    <td class="text-right py-3 px-4 font-bold text-sm md:text-lg ${f.type === 'thu' ? 'text-green-600' : 'text-red-600'}">${f.type === 'thu' ? '+' : '-'}${formatMoney(f.amount)}</td>
+                </tr>
+            `).join('');
+        };
+
+        window.deleteDocItem = async function(collectionName, id) {
+            if(!window.currentUser) return;
+            if(confirm("Xóa mục này vĩnh viễn? Dữ liệu không thể khôi phục!")) {
+                const ref = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', collectionName, id);
+                await window.deleteDoc(ref); showToast("Đã xóa thành công");
+                syncToGoogleSheets('DELETE', collectionName, id, null);
+            }
+        }
+    </script>
+</body>
+</html>
